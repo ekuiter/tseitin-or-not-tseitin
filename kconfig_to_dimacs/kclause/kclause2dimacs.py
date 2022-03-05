@@ -21,6 +21,5 @@ constraints = get_kclause_constraints(sys.argv[1])
 solver = z3.Solver()
 g = z3.Goal()
 g.add(constraints)
-t = z3.Tactic('tseitin-cnf') # todo: comment this out and compare results
 solver.add(g)
 print(solver.dimacs())

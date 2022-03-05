@@ -85,27 +85,35 @@ read-model() (
     i=0
     while [ $i -ne $N ]; do
         i=$(($i+1))
+        model="/home/data/models/$2/$3,$i,$1.model"
         dimacs="/home/data/models/$2/$3,$i,$1.dimacs"
         if [ $1 = kconfigreader ]; then
             cmd="/home/kconfigreader/run.sh de.fosd.typechef.kconfig.KConfigReader --fast --dumpconf $4 $writeDimacs $5 /home/data/models/$2/$3,$i,$1 | /home/measure_time | tee >(grep 'c time' >> $dimacs)"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            echo "c features $(wc -l /home/data/models/$2/$3,$i,$1.features | cut -d' ' -f1)" >> $dimacs
-            echo "c variables_extract $(cat $dimacs | grep -E '^c [0-9]' | wc -l)" >> $dimacs
-            echo "c literals_extract $(cat /home/data/models/$2/$3,$i,$1.model 2>/dev/null | grep -Fo 'def(' | wc -l)" >> $dimacs
+            variables_extract=$(cat $dimacs | grep -E '^c [0-9]' | wc -l)
+            literals_extract=$(cat $model 2>/dev/null | grep -Fo 'def(' | wc -l)
+            echo "c variables_extract $variables_extract" >> $dimacs
+            echo "c literals_extract $literals_extract" >> $dimacs
+            echo "#data variables_extract $variables_extract" >> $model
+            echo "#data literals_extract $literals_extract" >> $model
         elif [ $1 = kclause ]; then
-        # todo: 3x time, features, vars, lits
+            start=`date +%s.%N`
             cmd="$4 --extract -o /home/data/models/$2/$3,$i,$1.kclause $env $5"
             (echo $cmd | tee -a $LOG) && eval $cmd
             cmd="$4 --configs $env $5 > /home/data/models/$2/$3,$i,$1.features"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            cmd="kclause < /home/data/models/$2/$3,$i,$1.kclause > /home/data/models/$2/$3,$i,$1.model"
+            cmd="kclause < /home/data/models/$2/$3,$i,$1.kclause > $model"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            cmd="python3 /home/kclause2dimacs.py /home/data/models/$2/$3,$i,$1.model > $dimacs"
+            cmd="python3 /home/kclause2dimacs.py $model > $dimacs"
             (echo $cmd | tee -a $LOG) && eval $cmd
+            end=`date +%s.%N`
+            echo "c time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $dimacs
+            echo "c variables_extract $(cat $dimacs | grep -E '^c [0-9]' | grep -v and | grep -v or | wc -l)" >> $dimacs
         fi
         echo "c variables_transform $(cat $dimacs | grep -E ^p | cut -d' ' -f3)" >> $dimacs
         echo "c clauses_transform $(cat $dimacs | grep -E ^p | cut -d' ' -f4)" >> $dimacs
         echo "c literals_transform $(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)" >> $dimacs
+        echo "c features $(wc -l /home/data/models/$2/$3,$i,$1.features | cut -d' ' -f1)" >> $dimacs
     done
 )
 

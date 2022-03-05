@@ -40,4 +40,4 @@ done
 
 # clean up failures
 rm -f dimacs/freetz-ng*kconfigreader* # fails due to memory overflow
-rm -f dimacs/embtoolkit*kclause* # fails due to ?
+rm -f dimacs/embtoolkit*kclause* # fails due to ? (todo)

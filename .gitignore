@@ -1,2 +1,4 @@
-data_*
+data_kconfigreader
+data_kclause
 dimacs_files
+model_files

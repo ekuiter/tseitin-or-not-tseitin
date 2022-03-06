@@ -102,6 +102,10 @@ read-model() (
             (echo $cmd | tee -a $LOG) && eval $cmd
             cmd="$4 --configs $env $5 > /home/data/models/$2/$3,$i,$1.features"
             (echo $cmd | tee -a $LOG) && eval $cmd
+            if [ $2 = embtoolkit ]; then
+                # fix incorrect feature names, which Kclause interprets as a binary subtraction operator
+                sed -i 's/-/_/g' /home/data/models/$2/$3,$i,$1.kclause
+            fi
             cmd="kclause < /home/data/models/$2/$3,$i,$1.kclause > $model"
             (echo $cmd | tee -a $LOG) && eval $cmd
             cmd="python3 /home/kclause2dimacs.py $model > $dimacs"

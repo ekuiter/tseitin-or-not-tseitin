@@ -10,7 +10,7 @@ public class Parameters implements Serializable {
 	public int iteration;
 	public String tempPath;
 	public long timeout;
-	public Analysis transformation;
+	public Transformation transformation;
 
 	public Parameters(String system, String rootPath, String modelPath, int iteration, String tempPath,
 		long timeout) {

@@ -8,21 +8,17 @@ import org.spldev.evaluation.process.*;
 public class Wrapper extends Algorithm<List<String>> {
 	public static final String RESULT_PREFIX = "result: ";
 
-	final Analysis analysis;
+	final Transformation transformation;
 	private final ArrayList<String> results = new ArrayList<>();
 
-	public Wrapper(Analysis analysis) {
-		this.analysis = analysis;
-	}
-
-	public void setTransformation(Analysis transformation) {
-		analysis.parameters.transformation = transformation;
+	public Wrapper(Transformation transformation) {
+		this.transformation = transformation;
 	}
 
 	@Override
 	protected void addCommandElements() {
-		Path tempPath = Paths.get(analysis.parameters.tempPath).resolve("params.dat");
-		analysis.write(tempPath);
+		Path tempPath = Paths.get(transformation.parameters.tempPath).resolve("params.dat");
+		transformation.write(tempPath);
 		addCommandElement("java");
 		addCommandElement("-da");
 		addCommandElement("-Xmx12g");
@@ -56,6 +52,6 @@ public class Wrapper extends Algorithm<List<String>> {
 
 	@Override
 	public String getParameterSettings() {
-		return analysis.toString();
+		return transformation.toString();
 	}
 }

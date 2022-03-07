@@ -52,7 +52,7 @@ public class CNFExtractor extends Evaluator {
 				tabFormatter.setTabLevel(0);
 				logSystem();
 				tabFormatter.setTabLevel(1);
-				Arrays.stream(Analysis.transformations).forEach(transformation -> {
+				Arrays.stream(Transformation.transformations).forEach(transformation -> {
 					List<String> results = evaluateForParameters(parameters, transformation);
 					// writeCSV(writer, writer -> {
 					// 	writer.addValue(systemIndex);
@@ -65,30 +65,12 @@ public class CNFExtractor extends Evaluator {
 		}
 	}
 
-	private List<String> evaluateForParameters(Parameters parameters, Analysis transformation) {
+	private List<String> evaluateForParameters(Parameters parameters, Transformation transformation) {
 		tabFormatter.setTabLevel(2);
-		List<String> results = new ArrayList<>();
-		Analysis.analyses.stream().map(Pair::getKey).forEach(analysisClass -> {
-			try {
-				Analysis analysis = (Analysis) analysisClass.getConstructor().newInstance();
-				results.addAll(run(parameters, analysis, transformation));
-			} catch (InstantiationException | IllegalAccessException | InvocationTargetException
-				| NoSuchMethodException e) {
-				e.printStackTrace();
-			}
-		});
-		return results;
-	}
-
-	private List<String> run(Parameters parameters, Analysis analysis, Analysis transformation) {
-		analysis.setParameters(parameters);
 		transformation.setParameters(parameters);
-		Wrapper wrapper = new Wrapper(analysis);
-		wrapper.setTransformation(transformation);
+		Wrapper wrapper = new Wrapper(transformation);
 		tabFormatter.incTabLevel();
 		List<String> results = processRunner.run(wrapper).getResult();
-		while (results.size() < wrapper.analysis.getResultColumns().length)
-			results.add("NA");
 		tabFormatter.decTabLevel();
 		return results;
 	}

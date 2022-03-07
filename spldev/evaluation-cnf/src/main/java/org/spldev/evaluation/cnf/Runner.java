@@ -16,9 +16,9 @@ public class Runner {
 		ExtensionLoader.load();
 		LibraryManager.registerLibrary(FMCoreLibrary.getInstance());
 		FMFormatManager.getInstance().addExtension(new KConfigReaderFormat());
-		Analysis analysis = Analysis.read(Paths.get(args[0]));
-		Objects.requireNonNull(analysis);
-		System.out.println(analysis);
-		analysis.run();
+		Transformation transformation = Transformation.read(Paths.get(args[0]));
+		Objects.requireNonNull(transformation);
+		System.out.println(transformation);
+		transformation.run();
 	}
 }

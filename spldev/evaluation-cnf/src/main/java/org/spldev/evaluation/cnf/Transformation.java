@@ -18,8 +18,11 @@ import org.spldev.util.data.Pair;
 import org.spldev.util.io.FileHandler;
 import org.spldev.util.job.Executor;
 import org.spldev.util.logging.Logger;
+import org.spldev.formula.expression.transform.NormalForms;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -29,23 +32,18 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class Analysis implements Serializable {
+public abstract class Transformation implements Serializable {
 	private static final long serialVersionUID = 1L;
-	public static Analysis[] transformations = new Analysis[] {
+	public static Transformation[] transformations = new Transformation[] {
 		new TseitinZ3(),
 		new DistributiveFeatureIDE(),
 	};
-	public static List<Pair<Class<?>, String[]>> analyses = new ArrayList<>();
-
-	static {
-		analyses.add(new Pair<>(Transform.class, new String[] { "TransformTime", "Variables", "Clauses" }));
-		// maybe also consider kmax-mined models (to avoid bias by kconfigreader)? but this requires another input mechanism for kmax files
-	}
 
 	public Parameters parameters;
 
 	public void setParameters(Parameters parameters) {
 		this.parameters = parameters;
+		this.parameters.transformation = this;
 	}
 
 	static class Result<T> extends Pair<Long, T> {
@@ -54,13 +52,13 @@ public abstract class Analysis implements Serializable {
 		}
 	}
 
-	public static Analysis read(Path path) {
+	public static Transformation read(Path path) {
 		try {
 			FileInputStream fileInputStream = new FileInputStream(path.toFile());
 			ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-			Analysis analysis = (Analysis) objectInputStream.readObject();
+			Transformation transformation = (Transformation) objectInputStream.readObject();
 			objectInputStream.close();
-			return analysis;
+			return transformation;
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -84,12 +82,6 @@ public abstract class Analysis implements Serializable {
 		return getClass().getSimpleName() + "{" +
 			"parameters=" + parameters +
 			'}';
-	}
-
-	public String[] getResultColumns() {
-		return analyses.stream()
-			.filter(analysisPair -> analysisPair.getKey().equals(this.getClass()))
-			.findFirst().orElseThrow().getValue();
 	}
 
 	protected <T> Result execute(Callable<T> method) {
@@ -145,60 +137,26 @@ public abstract class Analysis implements Serializable {
 		return getTempPath("dimacs");
 	}
 
-	protected boolean fileExists(Path path) {
-		try {
-			BufferedReader br = new BufferedReader(new FileReader(path.toFile()));
-			if (br.readLine() == null)
-				return false;
-		} catch (IOException e) {
-			return false;
-		}
-		return true;
-	}
-
-	protected void printResult(Object o) {
-		System.out.println(Wrapper.RESULT_PREFIX + o);
-	}
-
-	protected void processFormulaResult(Result<Formula> result) {
-		if (result != null) {
-			printResult(result.getKey());
-			printResult(VariableMap.fromExpression(result.getValue()).size());
-			printResult(result.getValue().getChildren().size());
-			writeFormula(result.getValue(), getTempPath());
-		}
-	}
-
-	protected void printResult(Result<?> result) {
-		if (result != null) {
-			printResult(result.getKey());
-			printResult(result.getValue());
-		}
-	}
-
-	private List<String> getActualFeatures(Stream<String> stream) {
-		return stream.filter(name -> name != null && !name.startsWith("__temp__"))
-			.filter(name -> !name.startsWith("__Root__"))
-			.filter(name -> !name.startsWith("k!"))
-			.filter(name -> !name.startsWith("|"))
-			.collect(Collectors.toList());
-	}
-
-	protected List<String> getActualFeatures(ModelRepresentation rep) {
-		return getActualFeatures(rep.getVariables().getNames().stream());
-	}
-
-	protected List<String> getActualFeatures(CNF cnf) {
-		return getActualFeatures(Arrays.stream(cnf.getVariables().getNames()));
-	}
-
 	abstract public void run() throws Exception;
 
-	public static class TseitinZ3 extends Analysis {
+	public static class TseitinZ3 extends Transformation {
 		@Override
 		public void run() {
 			Formula formula = readFormula(Paths.get(parameters.modelPath));
-			processFormulaResult(executeTransformer(formula, new CNFTseitinTransformer()));
+			int variables = VariableMap.fromExpression(formula).size();
+			int literals = NormalForms.simplifyForNF(formula).getChildren().size();
+			Result<Formula> result = executeTransformer(formula, new CNFTseitinTransformer());
+			if (result != null) {
+				writeFormula(result.getValue(), getTempPath());
+				try {
+					Files.write(getTempPath(), (
+						"c time " + result.getKey() + "\n" +
+						"c variables_extract " + variables + "\n" +
+						"c literals_extract " + literals + "\n"
+					).getBytes(), StandardOpenOption.APPEND);
+				} catch (IOException e) {
+				}
+			}
 		}
 
 		@Override
@@ -207,7 +165,7 @@ public abstract class Analysis implements Serializable {
 		}
 	}
 
-	public static class DistributiveFeatureIDE extends Analysis {
+	public static class DistributiveFeatureIDE extends Transformation {
 		@Override
 		public void run() {
 			final IFeatureModel featureModel = FeatureModelManager
@@ -215,11 +173,12 @@ public abstract class Analysis implements Serializable {
 			if (featureModel != null) {
 				Result<CNF> result = execute(() -> new FeatureModelFormula(featureModel).getCNF());
 				if (result != null) {
-					printResult(result.getKey());
-					printResult(result.getValue().getVariables().size());
-					printResult(result.getValue().getClauses().size());
 					de.ovgu.featureide.fm.core.io.manager.FileHandler.save(getTempPath(), result.getValue(),
 							new DIMACSFormatCNF());
+					try {
+						Files.write(getTempPath(), ("c time " + result.getKey()).getBytes(), StandardOpenOption.APPEND);
+					} catch (IOException e) {
+					}
 				}
 			}
 		}
@@ -227,13 +186,6 @@ public abstract class Analysis implements Serializable {
 		@Override
 		public String toString() {
 			return "featureide";
-		}
-	}
-
-	public static class Transform extends Analysis {
-		@Override
-		public void run() throws Exception {
-			parameters.transformation.run();
 		}
 	}
 }

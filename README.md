@@ -4,7 +4,7 @@
 
 ### Getting Started
 
-First, install Docker. On Arch Linux, run:
+First, [install Docker](https://docs.docker.com/get-docker/). On Arch Linux, run:
 
 ```
 usermod -aG docker $(whoami) # then, log out and in again
@@ -38,3 +38,5 @@ To start an interactive session in a (not already running) Docker container:
 ```
 docker run -it $reader /bin/bash
 ```
+
+todo: docker save/load

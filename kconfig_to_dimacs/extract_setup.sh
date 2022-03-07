@@ -13,10 +13,10 @@ SYSTEMS=/home/data/systems_$READER.csv
 MODELS=/home/data/models_$READER.csv
 if [ $READER = kconfigreader ]; then
     BINDING=dumpconf
-    TAGS="kconfigreader|rsf|features|model|dimacs|cnf|tseytin"
+    TAGS="kconfigreader|rsf|features|model|dimacs|cnf|tseitin"
 elif [ $READER = kclause ]; then
     BINDING=kextractor
-    TAGS="kmax|kclause|features|model|dimacs|cnf|tseytin"
+    TAGS="kmax|kclause|features|model|dimacs|cnf|tseitin"
 else
     echo "invalid reader"
     exit 1
@@ -67,7 +67,7 @@ read-model() (
     # the following hacks may not lead to accurate results
     if [ $2 = freetz-ng ]; then
         touch make/Config.in.generated make/external.in.generated config/custom.in # ugly hack because freetz-ng is weird
-        writeDimacs="" # Tseytin transformation crashes for freetz-ng (out of memory error)
+        writeDimacs="" # Tseitin transformation crashes for freetz-ng (out of memory error)
     fi
     if [ $2 = buildroot ]; then
         touch .br2-external.in .br2-external.in.paths .br2-external.in.toolchains .br2-external.in.openssl .br2-external.in.jpeg .br2-external.in.menus .br2-external.in.skeleton .br2-external.in.init

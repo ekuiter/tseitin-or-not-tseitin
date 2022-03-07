@@ -1,4 +1,6 @@
-data_kconfigreader
-data_kclause
-dimacs_files
-model_files
+/kconfig_to_dimacs/data_kconfigreader
+/kconfig_to_dimacs/data_kclause
+/spldev/data
+/spldev/models*
+/dimacs
+/models

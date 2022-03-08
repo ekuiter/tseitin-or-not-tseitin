@@ -1,17 +1,13 @@
 package org.spldev.evaluation.cnf;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import org.spldev.evaluation.Evaluator;
+import org.spldev.evaluation.process.ProcessRunner;
+import org.spldev.evaluation.util.ModelReader;
+import org.spldev.formula.expression.Formula;
+import org.spldev.formula.expression.io.FormulaFormatManager;
 
-import org.spldev.evaluation.*;
-import org.spldev.evaluation.process.*;
-import org.spldev.evaluation.util.*;
-import org.spldev.formula.expression.*;
-import org.spldev.formula.expression.atomic.literal.*;
-import org.spldev.formula.expression.io.*;
-import org.spldev.formula.expression.transform.*;
-import org.spldev.util.data.Pair;
-import org.spldev.util.io.csv.*;
+import java.util.Arrays;
+import java.util.List;
 
 public class CNFExtractor extends Evaluator {
 	protected ProcessRunner processRunner;

@@ -6,8 +6,8 @@ import de.ovgu.featureide.fm.core.base.IFeatureModel;
 import de.ovgu.featureide.fm.core.io.dimacs.DIMACSFormatCNF;
 import de.ovgu.featureide.fm.core.io.manager.FeatureModelManager;
 import org.spldev.evaluation.util.ModelReader;
-import org.spldev.formula.ModelRepresentation;
 import org.spldev.formula.expression.Formula;
+import org.spldev.formula.expression.atomic.Atomic;
 import org.spldev.formula.expression.atomic.literal.VariableMap;
 import org.spldev.formula.expression.io.DIMACSFormat;
 import org.spldev.formula.expression.io.FormulaFormatManager;
@@ -18,23 +18,17 @@ import org.spldev.util.data.Pair;
 import org.spldev.util.io.FileHandler;
 import org.spldev.util.job.Executor;
 import org.spldev.util.logging.Logger;
-import org.spldev.formula.expression.transform.NormalForms;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.spldev.util.tree.Trees;
 import org.spldev.util.tree.structure.Tree;
 import org.spldev.util.tree.visitor.TreeVisitor;
-import org.spldev.formula.expression.atomic.Atomic;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.List;
+import java.util.concurrent.*;
 
 public abstract class Transformation implements Serializable {
 	private static final long serialVersionUID = 1L;

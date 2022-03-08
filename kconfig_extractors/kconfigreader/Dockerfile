@@ -39,8 +39,7 @@ RUN apt-get update && apt-get install -y --allow-unauthenticated \
 # - SAT solver for consistency checking
 # - time measurement wrapper
 # - evaluation scripts
-COPY kconfigreader/dumpconf.c kconfigreader/measure_time.c *.sh ./
-RUN wget http://minisat.se/downloads/MiniSat_v1.14_linux \
-  && chmod +x MiniSat_v1.14_linux \
+COPY kconfigreader/dumpconf.c MiniSat_v1.14_linux kconfigreader/measure_time.c *.sh ./
+RUN chmod +x MiniSat_v1.14_linux \
   && gcc -o measure_time measure_time.c \
   && chmod +x *.sh

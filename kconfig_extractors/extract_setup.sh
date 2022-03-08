@@ -106,7 +106,7 @@ read-model() (
             fi
             cmd="kclause < /home/data/models/$2/$3,$i,$1.kclause > $model"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            cmd="python3 /home/kclause2dimacs.py $model > $dimacs"
+            cmd="python3 /home/kclause2dimacs.py $model > $dimacs" # todo: remove, as this overlaps with spldev-z3
             (echo $cmd | tee -a $LOG) && eval $cmd
             end=`date +%s.%N`
             echo "c time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $dimacs

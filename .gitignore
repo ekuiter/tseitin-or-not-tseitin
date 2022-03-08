@@ -1,5 +1,5 @@
-/kconfig_to_dimacs/data_kconfigreader
-/kconfig_to_dimacs/data_kclause
+/kconfig_extractors/data_kconfigreader
+/kconfig_extractors/data_kclause
 /spldev/data
 /spldev/models*
 /dimacs

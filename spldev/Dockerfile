@@ -13,7 +13,7 @@ RUN git clone https://github.com/skrieter/util.git \
 RUN git clone https://github.com/skrieter/evaluation.git \
     && git -C evaluation checkout bdb7a6eb400b7fa3f3c1a2df04ee2cd66a041e78
 RUN git clone https://github.com/skrieter/formula.git \
-    && git -C formula checkout cd4d19ce48848ecd90f14cb89f281868111c9401
+    && git -C formula checkout 29a16c0c0d24a2934750895f011740752ef8bb87
 RUN git clone https://github.com/skrieter/formula-analysis.git \
     && git -C formula-analysis checkout 048b1c4408c741147974d701ca456300088aec99
 RUN git clone https://github.com/skrieter/formula-analysis-javasmt.git \

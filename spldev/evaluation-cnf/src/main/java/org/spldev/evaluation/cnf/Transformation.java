@@ -31,6 +31,10 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.spldev.util.tree.Trees;
+import org.spldev.util.tree.structure.Tree;
+import org.spldev.util.tree.visitor.TreeVisitor;
+import org.spldev.formula.expression.atomic.Atomic;
 
 public abstract class Transformation implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -139,18 +143,40 @@ public abstract class Transformation implements Serializable {
 
 	abstract public void run() throws Exception;
 
+	public static class LiteralsCounter implements TreeVisitor<Integer, Tree<?>> {
+
+		private int literals = 0;
+
+		@Override
+		public void reset() {
+			literals = 0;
+		}
+
+		@Override
+		public VisitorResult firstVisit(List<Tree<?>> path) {
+			if (TreeVisitor.getCurrentNode(path) instanceof Atomic)
+				literals++;
+			return VisitorResult.Continue;
+		}
+
+		@Override
+		public Integer getResult() {
+			return literals;
+		}
+	}
+
 	public static class TseitinZ3 extends Transformation {
 		@Override
 		public void run() {
 			Formula formula = readFormula(Paths.get(parameters.modelPath));
 			int variables = VariableMap.fromExpression(formula).size();
-			int literals = NormalForms.simplifyForNF(formula).getChildren().size();
+			int literals = Trees.traverse(formula, new LiteralsCounter()).get();
 			Result<Formula> result = executeTransformer(formula, new CNFTseitinTransformer());
 			if (result != null) {
 				writeFormula(result.getValue(), getTempPath());
 				try {
 					Files.write(getTempPath(), (
-						"c time " + result.getKey() + "\n" +
+						"c time_transform " + result.getKey() + "\n" +
 						"c variables_extract " + variables + "\n" +
 						"c literals_extract " + literals + "\n"
 					).getBytes(), StandardOpenOption.APPEND);
@@ -168,6 +194,9 @@ public abstract class Transformation implements Serializable {
 	public static class DistributiveFeatureIDE extends Transformation {
 		@Override
 		public void run() {
+			Formula formula = readFormula(Paths.get(parameters.modelPath));
+			int variables = VariableMap.fromExpression(formula).size();
+			int literals = Trees.traverse(formula, new LiteralsCounter()).get();
 			final IFeatureModel featureModel = FeatureModelManager
 					.load(Paths.get(parameters.rootPath).resolve(parameters.modelPath));
 			if (featureModel != null) {
@@ -176,9 +205,13 @@ public abstract class Transformation implements Serializable {
 					de.ovgu.featureide.fm.core.io.manager.FileHandler.save(getTempPath(), result.getValue(),
 							new DIMACSFormatCNF());
 					try {
-						Files.write(getTempPath(), ("c time " + result.getKey()).getBytes(), StandardOpenOption.APPEND);
-					} catch (IOException e) {
-					}
+					Files.write(getTempPath(), (
+						"c time_transform " + result.getKey() + "\n" +
+						"c variables_extract " + variables + "\n" +
+						"c literals_extract " + literals + "\n"
+					).getBytes(), StandardOpenOption.APPEND);
+				} catch (IOException e) {
+				}
 				}
 			}
 		}

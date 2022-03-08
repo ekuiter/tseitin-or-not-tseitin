@@ -94,8 +94,6 @@ read-model() (
             literals_extract=$(cat $model 2>/dev/null | grep -Fo 'def(' | wc -l)
             echo "c variables_extract $variables_extract" >> $dimacs
             echo "c literals_extract $literals_extract" >> $dimacs
-            echo "#data variables_extract $variables_extract" >> $model
-            echo "#data literals_extract $literals_extract" >> $model
         elif [ $1 = kclause ]; then
             start=`date +%s.%N`
             cmd="$4 --extract -o /home/data/models/$2/$3,$i,$1.kclause $env $5"

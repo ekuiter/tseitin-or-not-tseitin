@@ -5,6 +5,13 @@ import de.ovgu.featureide.fm.core.analysis.cnf.formula.FeatureModelFormula;
 import de.ovgu.featureide.fm.core.base.IFeatureModel;
 import de.ovgu.featureide.fm.core.io.dimacs.DIMACSFormatCNF;
 import de.ovgu.featureide.fm.core.io.manager.FeatureModelManager;
+import org.sosy_lab.common.ShutdownManager;
+import org.sosy_lab.common.configuration.Configuration;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.log.BasicLogManager;
+import org.sosy_lab.common.log.LogManager;
+import org.sosy_lab.java_smt.SolverContextFactory;
+import org.sosy_lab.java_smt.api.*;
 import org.spldev.evaluation.util.ModelReader;
 import org.spldev.formula.expression.Formula;
 import org.spldev.formula.expression.atomic.Atomic;
@@ -14,6 +21,7 @@ import org.spldev.formula.expression.io.FormulaFormatManager;
 import org.spldev.formula.expression.transform.Transformer;
 import org.spldev.formula.solver.RuntimeTimeoutException;
 import org.spldev.formula.solver.javasmt.CNFTseitinTransformer;
+import org.spldev.formula.solver.javasmt.FormulaToJavaSmt;
 import org.spldev.util.data.Pair;
 import org.spldev.util.io.FileHandler;
 import org.spldev.util.job.Executor;
@@ -160,11 +168,43 @@ public abstract class Transformation implements Serializable {
 	}
 
 	public static class TseitinZ3 extends Transformation {
+		private static Configuration config;
+		private static LogManager logManager;
+		private static SolverContext context;
+		private static ShutdownManager shutdownManager;
+		private static FormulaManager formulaManager;
+		private static BooleanFormulaManager booleanFormulaManager;
+
+		static {
+			try {
+				config = Configuration.defaultConfiguration();
+				logManager = BasicLogManager.create(config);
+				shutdownManager = ShutdownManager.create();
+				context = SolverContextFactory.createSolverContext(config, logManager, shutdownManager
+						.getNotifier(), SolverContextFactory.Solvers.Z3);
+				formulaManager = context.getFormulaManager();
+				booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+			} catch (InvalidConfigurationException e) {
+				e.printStackTrace();
+			}
+		}
+
 		@Override
 		public void run() {
 			Formula formula = readFormula(Paths.get(parameters.modelPath));
 			int variables = VariableMap.fromExpression(formula).size();
 			int literals = Trees.traverse(formula, new LiteralsCounter()).get();
+
+			VariableMap variableMap = VariableMap.fromExpression(formula);
+			BooleanFormula input = new FormulaToJavaSmt(context,
+					variableMap).nodeToFormula(formula);
+			try {
+				Files.write(Paths.get(getTempPath().toString()+".smt"), formulaManager.dumpFormula(input).toString().getBytes());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+
 			Result<Formula> result = executeTransformer(formula, new CNFTseitinTransformer());
 			if (result != null) {
 				writeFormula(result.getValue(), getTempPath());

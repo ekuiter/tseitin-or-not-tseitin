@@ -94,6 +94,10 @@ read-model() (
             literals_extract=$(cat $model 2>/dev/null | grep -Fo 'def(' | wc -l)
             echo "c variables_extract $variables_extract" >> $dimacs
             echo "c literals_extract $literals_extract" >> $dimacs
+            echo "c variables_transform $(cat $dimacs | grep -E ^p | cut -d' ' -f3)" >> $dimacs
+            echo "c clauses_transform $(cat $dimacs | grep -E ^p | cut -d' ' -f4)" >> $dimacs
+            echo "c literals_transform $(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)" >> $dimacs
+            echo "c features $(wc -l /home/data/models/$2/$3,$i,$1.features | cut -d' ' -f1)" >> $dimacs
         elif [ $1 = kclause ]; then
             start=`date +%s.%N`
             cmd="$4 --extract -o /home/data/models/$2/$3,$i,$1.kclause $env $5"
@@ -106,16 +110,11 @@ read-model() (
             fi
             cmd="kclause < /home/data/models/$2/$3,$i,$1.kclause > $model"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            cmd="python3 /home/kclause2dimacs.py $model > $dimacs" # todo: remove, as this overlaps with spldev-z3
-            (echo $cmd | tee -a $LOG) && eval $cmd
             end=`date +%s.%N`
-            echo "c time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $dimacs
-            echo "c variables_extract $(cat $dimacs | grep -E '^c [0-9]' | grep -v and | grep -v or | wc -l)" >> $dimacs
+            cmd="python3 /home/kclause2kconfigreader.py $model > $model.tmp && mv $model.tmp $model"
+            (echo $cmd | tee -a $LOG) && eval $cmd
+            echo "<!-- time $(echo "($end - $start) * 1000000000 / 1" | bc) -->" >> /home/data/models/$2/$3,$i,$1.xml
         fi
-        echo "c variables_transform $(cat $dimacs | grep -E ^p | cut -d' ' -f3)" >> $dimacs
-        echo "c clauses_transform $(cat $dimacs | grep -E ^p | cut -d' ' -f4)" >> $dimacs
-        echo "c literals_transform $(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)" >> $dimacs
-        echo "c features $(wc -l /home/data/models/$2/$3,$i,$1.features | cut -d' ' -f1)" >> $dimacs
     done
 )
 

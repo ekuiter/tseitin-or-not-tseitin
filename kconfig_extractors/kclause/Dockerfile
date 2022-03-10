@@ -40,6 +40,6 @@ RUN apt-get update && apt-get install -y --allow-unauthenticated \
 # - SAT solver for consistency checking
 # - DIMACS extractor
 # - evaluation scripts
-COPY kclause/kextractor.c MiniSat_v1.14_linux kclause/kclause2dimacs.py *.sh ./
+COPY kclause/kextractor.c MiniSat_v1.14_linux kclause/*.py *.sh ./
 RUN chmod +x MiniSat_v1.14_linux \
   && chmod +x *.sh

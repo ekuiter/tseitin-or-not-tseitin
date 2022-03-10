@@ -20,7 +20,6 @@ import org.spldev.formula.expression.io.DIMACSFormat;
 import org.spldev.formula.expression.io.FormulaFormatManager;
 import org.spldev.formula.expression.transform.Transformer;
 import org.spldev.formula.solver.RuntimeTimeoutException;
-import org.spldev.formula.solver.javasmt.CNFTseitinTransformer;
 import org.spldev.formula.solver.javasmt.FormulaToJavaSmt;
 import org.spldev.util.data.Pair;
 import org.spldev.util.io.FileHandler;
@@ -41,8 +40,8 @@ import java.util.concurrent.*;
 public abstract class Transformation implements Serializable {
 	private static final long serialVersionUID = 1L;
 	public static Transformation[] transformations = new Transformation[] {
-		new TseitinZ3(),
-		new DistributiveFeatureIDE(),
+		new Z3(),
+		new FeatureIDE(),
 	};
 
 	public Parameters parameters;
@@ -167,7 +166,7 @@ public abstract class Transformation implements Serializable {
 		}
 	}
 
-	public static class TseitinZ3 extends Transformation {
+	public static class Z3 extends Transformation {
 		private static Configuration config;
 		private static LogManager logManager;
 		private static SolverContext context;
@@ -190,33 +189,11 @@ public abstract class Transformation implements Serializable {
 		}
 
 		@Override
-		public void run() {
+		public void run() throws IOException {
 			Formula formula = readFormula(Paths.get(parameters.modelPath));
-			int variables = VariableMap.fromExpression(formula).size();
-			int literals = Trees.traverse(formula, new LiteralsCounter()).get();
-
 			VariableMap variableMap = VariableMap.fromExpression(formula);
-			BooleanFormula input = new FormulaToJavaSmt(context,
-					variableMap).nodeToFormula(formula);
-			try {
-				Files.write(Paths.get(getTempPath().toString()+".smt"), formulaManager.dumpFormula(input).toString().getBytes());
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-
-			Result<Formula> result = executeTransformer(formula, new CNFTseitinTransformer());
-			if (result != null) {
-				writeFormula(result.getValue(), getTempPath());
-				try {
-					Files.write(getTempPath(), (
-						"c time_transform " + result.getKey() + "\n" +
-						"c variables_extract " + variables + "\n" +
-						"c literals_extract " + literals + "\n"
-					).getBytes(), StandardOpenOption.APPEND);
-				} catch (IOException e) {
-				}
-			}
+			BooleanFormula input = new FormulaToJavaSmt(context, variableMap).nodeToFormula(formula);
+			Files.write(Paths.get(getTempPath("smt").toString()), formulaManager.dumpFormula(input).toString().getBytes());
 		}
 
 		@Override
@@ -225,9 +202,10 @@ public abstract class Transformation implements Serializable {
 		}
 	}
 
-	public static class DistributiveFeatureIDE extends Transformation {
+	public static class FeatureIDE extends Transformation {
 		@Override
 		public void run() {
+			// todo: use FeatureIDE 3.5.5
 			Formula formula = readFormula(Paths.get(parameters.modelPath));
 			int variables = VariableMap.fromExpression(formula).size();
 			int literals = Trees.traverse(formula, new LiteralsCounter()).get();

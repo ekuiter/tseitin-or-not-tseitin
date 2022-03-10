@@ -24,18 +24,13 @@ int main(int argc, char* argv) {
             seconds = begin_transformation.tv_sec - begin_extraction.tv_sec;
             nanoseconds = begin_transformation.tv_nsec - begin_extraction.tv_nsec;
             elapsed = seconds * 1e+9 + nanoseconds;
-            printf("c time_extract %llu\n", elapsed);
+            printf("#meta time %llu\n", elapsed);
             
             seconds = end.tv_sec - begin_transformation.tv_sec;
             nanoseconds = end.tv_nsec - begin_transformation.tv_nsec;
             elapsed = seconds * 1e+9 + nanoseconds;
-            printf("c time_transform %llu\n", elapsed);
-            
-            seconds = end.tv_sec - begin_extraction.tv_sec;
-            nanoseconds = end.tv_nsec - begin_extraction.tv_nsec;
-            elapsed = seconds * 1e+9 + nanoseconds;
             printf("c time %llu\n", elapsed);
-            
+                        
             return 0;
         }
     }

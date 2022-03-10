@@ -37,8 +37,8 @@ public class CNFExtractor extends Evaluator {
 					.replace(".kconfigreader.model", "")
 					.replace(".xml", "");
 				if (systemIteration == 0) {
-					Formula formula = fmReader.read(modelPath).orElseThrow(p -> new RuntimeException(
-						"no feature model"));
+					//Formula formula = fmReader.read(modelPath).orElseThrow(p -> new RuntimeException(
+					//	"no feature model"));
 					// VariableMap.fromExpression(formula).size()); // todo
 					// NormalForms.simplifyForNF(formula).getChildren().size()); // todo
 				}

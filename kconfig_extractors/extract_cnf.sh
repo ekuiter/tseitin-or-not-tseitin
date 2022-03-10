@@ -14,7 +14,6 @@ source extract_setup.sh
 
 # Iterate the process to improve accuracy of time measurement.
 # Also, model/DIMACS files produced by kconfigreader have nondeterministic clause order.
-N=1
 
 # Run the analysis.
 # linux_env="ARCH=x86,SRCARCH=x86,KERNELVERSION=kcu,srctree=./,CC=cc,LD=ld,RUSTC=rustc"
@@ -22,7 +21,7 @@ N=1
 # run linux skip-model v4.17 scripts/kconfig/*.o arch/x86/Kconfig "" $linux_env
 # run linux git v4.18 scripts/kconfig/*.o arch/x86/Kconfig "" $linux_env
 # run linux skip-model v5.0 scripts/kconfig/*.o arch/x86/Kconfig "" $linux_env
-# run axtls skip-checkout release-2.0.0 config/scripts/config/*.o config/Config.in $TAGS
+run axtls skip-checkout release-2.0.0 config/scripts/config/*.o config/Config.in $TAGS
 # export BR2_EXTERNAL=support/dummy-external
 # export BUILD_DIR=/home/buildroot
 # export BASE_DIR=/home/buildroot
@@ -32,4 +31,4 @@ N=1
 # run fiasco git 58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed /home/data/c-bindings/linux/v5.0.$BINDING src/Kconfig ""
 # run freetz-ng git 5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af /home/data/c-bindings/linux/v5.0.$BINDING config/Config.in ""
 # run toybox git 0.8.6 /home/data/c-bindings/linux/v2.6.12.$BINDING Config.in ""
-run uclibc-ng git v1.0.40 extra/config/zconf.tab.o extra/Configs/Config.in ""
+# run uclibc-ng git v1.0.40 extra/config/zconf.tab.o extra/Configs/Config.in ""

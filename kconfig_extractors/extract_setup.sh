@@ -88,16 +88,11 @@ read-model() (
         model="/home/data/models/$2/$3,$i,$1.model"
         dimacs="/home/data/models/$2/$3,$i,$1.dimacs"
         if [ $1 = kconfigreader ]; then
-            cmd="/home/kconfigreader/run.sh de.fosd.typechef.kconfig.KConfigReader --fast --dumpconf $4 $writeDimacs $5 /home/data/models/$2/$3,$i,$1 | /home/measure_time | tee >(grep 'c time' >> $dimacs)"
+            cmd="/home/kconfigreader/run.sh de.fosd.typechef.kconfig.KConfigReader --fast --dumpconf $4 $writeDimacs $5 /home/data/models/$2/$3,$i,$1 | /home/measure_time | tee >(grep '#meta time' >> $model) >(grep 'c time' >> $dimacs)"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            variables_extract=$(cat $dimacs | grep -E '^c [0-9]' | wc -l)
-            literals_extract=$(cat $model 2>/dev/null | grep -Fo 'def(' | wc -l)
-            echo "c variables_extract $variables_extract" >> $dimacs
-            echo "c literals_extract $literals_extract" >> $dimacs
-            echo "c variables_transform $(cat $dimacs | grep -E ^p | cut -d' ' -f3)" >> $dimacs
-            echo "c clauses_transform $(cat $dimacs | grep -E ^p | cut -d' ' -f4)" >> $dimacs
-            echo "c literals_transform $(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)" >> $dimacs
-            echo "c features $(wc -l /home/data/models/$2/$3,$i,$1.features | cut -d' ' -f1)" >> $dimacs
+            #echo "#meta variables $(cat $dimacs | grep -E '^c [0-9]' | wc -l)" >> $model
+            #echo "c variables $(cat $dimacs | grep -E ^p | cut -d' ' -f3)" >> $dimacs
+            #echo "c literals $(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)" >> $dimacs
         elif [ $1 = kclause ]; then
             start=`date +%s.%N`
             cmd="$4 --extract -o /home/data/models/$2/$3,$i,$1.kclause $env $5"
@@ -113,7 +108,7 @@ read-model() (
             end=`date +%s.%N`
             cmd="python3 /home/kclause2kconfigreader.py $model > $model.tmp && mv $model.tmp $model"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            echo "<!-- time $(echo "($end - $start) * 1000000000 / 1" | bc) -->" >> /home/data/models/$2/$3,$i,$1.xml
+            echo "#meta time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $model
         fi
     done
 )

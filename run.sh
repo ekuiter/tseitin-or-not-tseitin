@@ -2,6 +2,7 @@
 set -e
 shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers to use
+N=1 # number of iterations
 
 # stage 1: call kconfigreader (extraction phase) and kclause
 # stage 2: call Z3 and FeatureIDE
@@ -10,10 +11,10 @@ READERS=(kconfigreader kclause) # Docker containers to use
 
 # stage 1: extract feature models (DIMACS files for kconfigreader),
 # using recent versions of well-known Kconfig projects
-if [[ ! -d dimacs ]] || [[ ! -d models ]]; then
+if [[ ! -d _dimacs ]] || [[ ! -d _models ]]; then
     # clean up previous (incomplete) files
-    rm -rf dimacs models kconfig_extractors/data_*
-    mkdir -p dimacs models
+    rm -rf _dimacs _models kconfig_extractors/data_*
+    mkdir -p _dimacs _models
 
     # extract feature models with kconfigreader and kclause
     for reader in ${READERS[@]}; do
@@ -41,32 +42,61 @@ if [[ ! -d dimacs ]] || [[ ! -d models ]]; then
                 else
                     newfile=$file
                 fi
-                cp kconfig_extractors/data_$reader/models/$system/$file dimacs/$system,$newfile
+                cp kconfig_extractors/data_$reader/models/$system/$file _dimacs/$system,$newfile
             done
         done
     done
 
     # clean up failures and unneeded files
-    rm -f dimacs/freetz-ng*kconfigreader.dimacs # fails due to memory overflow
+    rm -f _dimacs/freetz-ng*kconfigreader.dimacs # fails due to memory overflow
 
     # move models for further processing
-    mv dimacs/*.model models/
+    mv _dimacs/*.model _models/
+
+    # add hierarchical models from Knüppel's "Is there a mismatch paper"
+    rm -f _models/*.xml
+    i=0
+    while [ $i -ne $N ]; do
+        i=$(($i+1))
+        for m in hierarchies/*.xml; do
+            echo #cp $m _models/$(basename $m .xml),$i,hierarchy.xml
+        done
+    done
 fi
 
-# stage 2: extract DIMACS files with FeatureIDE and Z3
-rm -rf spldev/data spldev/models* # todo: rename spldev (use stages?)
-ls models > spldev/models.txt
-mkdir -p spldev/models/
-cp models/* spldev/models/
-# todo: read kclause models correctly
-docker build -f spldev/Dockerfile -t spldev spldev
-docker rm -f spldev || true
-docker run -m 16g -it --name spldev spldev evaluation-cnf/extract_cnf.sh
-docker cp spldev:/home/spldev/evaluation-cnf/output spldev/data
-docker rm -f spldev
-# todo: copy dimacs files into right folder with right name and append number of new variables and literals
+# stage 2: extract DIMACS and SMT files with FeatureIDE and Z3
+if [[ ! -d _smt ]]; then
+    rm -rf spldev/data spldev/models* # todo: rename spldev (use stages?)
+    ls _models > spldev/models.txt
+    mkdir -p spldev/models/
+    cp _models/* spldev/models/
 
-# todo: cdl/knueppel benchmark
+    # build and run Docker image, similar as above
+    docker build -f spldev/Dockerfile -t spldev spldev
+    docker rm -f spldev || true
+    docker run -m 16g -it --name spldev spldev evaluation-cnf/extract_cnf.sh
+    docker cp spldev:/home/spldev/evaluation-cnf/output spldev/data
+    docker rm -f spldev
+
+    # arrange files for further processing
+    for file in spldev/data/*/temp/*.@(dimacs|smt); do
+        newfile=$(basename $file | sed 's/\.model//g' | sed 's/_0//g' | tr _ ,)
+        cp $file _dimacs/$newfile
+    done
+    mkdir -p _smt
+    mv _dimacs/*.smt _smt
+fi
+
+# stage 3:
+rm -rf kconfig_extractors/kclause/smt
+mkdir -p kconfig_extractors/kclause/smt/
+cp _smt/* kconfig_extractors/kclause/smt/
+docker build -f kconfig_extractors/kclause/Dockerfile -t kclause kconfig_extractors
+docker rm -f kclause || true
+docker run -m 16g -it --name kclause kclause ./transform_cnf.sh
+docker cp kclause:/home/dimacs kconfig_extractors/data_kclause
+docker rm -f kclause
+cp kconfig_extractors/data_kclause/dimacs/* _dimacs/
 
 # todo: export kclause/xml to formula to kconfigreader.model
 

@@ -1,6 +1,6 @@
 /kconfig_extractors/data_kconfigreader
 /kconfig_extractors/data_kclause
+/kconfig_extractors/kclause/smt
 /spldev/data
 /spldev/models*
-/dimacs
-/models
+/_*

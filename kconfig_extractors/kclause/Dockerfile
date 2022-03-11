@@ -37,9 +37,7 @@ RUN apt-get update && apt-get install -y --allow-unauthenticated \
 
 # copy and set up
 # - kextractor (which is compiled against the projects' Kconfig implementations)
-# - SAT solver for consistency checking
 # - IO and evaluation scripts
 # - SMTlib files for transformation into DIMACS
-COPY kclause/kextractor.c MiniSat_v1.14_linux kclause/*.py *.sh kclause/transform* ./
-RUN chmod +x MiniSat_v1.14_linux \
-  && chmod +x *.sh
+COPY kclause/kextractor.c kclause/*.py *.sh kclause/transform* ./
+RUN chmod +x *.sh

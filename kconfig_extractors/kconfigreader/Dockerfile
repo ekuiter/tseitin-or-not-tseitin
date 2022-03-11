@@ -32,17 +32,14 @@ RUN git clone https://github.com/wbx-github/uclibc-ng uclibc-ng
 RUN apt-get update && apt-get install -y --allow-unauthenticated \
   flex \
   bison \
-  build-essential
+  build-essential \
+  bc
 
 # copy and set up
 # - dumpconf (which is compiled against the projects' Kconfig implementations)
-# - SAT solver for consistency checking
-# - time measurement wrapper
 # - evaluation scripts
 # - CNF transformer
 COPY kconfigreader/TransformCNF.scala kconfigreader/src/main/scala/
 RUN cd kconfigreader && sbt mkrun
-COPY kconfigreader/dumpconf.c MiniSat_v1.14_linux kconfigreader/measure_time.c *.sh kconfigreader/transform* ./
-RUN chmod +x MiniSat_v1.14_linux \
-  && gcc -o measure_time measure_time.c \
-  && chmod +x *.sh
+COPY kconfigreader/dumpconf.c *.sh kconfigreader/transform* ./
+RUN chmod +x *.sh

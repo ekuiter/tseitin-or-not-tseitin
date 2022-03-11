@@ -9,14 +9,11 @@ else
     exit 1
 fi
 LOG=/home/data/log_$READER.txt
-SYSTEMS=/home/data/systems_$READER.csv
 MODELS=/home/data/models_$READER.csv
 if [ $READER = kconfigreader ]; then
     BINDING=dumpconf
-    TAGS="kconfigreader|rsf|features|model|dimacs|cnf|tseitin"
 elif [ $READER = kclause ]; then
     BINDING=kextractor
-    TAGS="kmax|kclause|features|model|dimacs|cnf|tseitin"
 else
     echo "invalid reader"
     exit 1
@@ -28,7 +25,7 @@ cd /home
 mkdir -p data
 echo -n > $LOG
 echo -n > $MODELS
-echo system,tag,c-binding,kconfig-file,tags >> $MODELS
+echo system,tag,c-binding,kconfig-file >> $MODELS
 
 # compiles the C program that extracts Kconfig constraints from Kconfig files
 # for kconfigreader and kclause, this compiles dumpconf and kextractor against the Kconfig parser, respectively
@@ -55,19 +52,17 @@ c-binding() (
 )
 
 read-model() (
-    # read-model kconfigreader|kclause system commit c-binding Kconfig tags env
+    # read-model kconfigreader|kclause system commit c-binding Kconfig env
     set -e
     mkdir -p /home/data/models/$2
-    writeDimacs=--writeDimacs
-    if [ -z "$7" ]; then
+    if [ -z "$6" ]; then
         env=""
     else
-        env="$(echo '' -e $7 | sed 's/,/ -e /g')"
+        env="$(echo '' -e $6 | sed 's/,/ -e /g')"
     fi
-    # the following hacks may not lead to accurate results
+    # the following hacks may impair accuracy, but are necessary to extract a model
     if [ $2 = freetz-ng ]; then
         touch make/Config.in.generated make/external.in.generated config/custom.in # ugly hack because freetz-ng is weird
-        writeDimacs="" # Tseitin transformation crashes for freetz-ng (out of memory error)
     fi
     if [ $2 = buildroot ]; then
         touch .br2-external.in .br2-external.in.paths .br2-external.in.toolchains .br2-external.in.openssl .br2-external.in.jpeg .br2-external.in.menus .br2-external.in.skeleton .br2-external.in.init
@@ -86,10 +81,11 @@ read-model() (
     while [ $i -ne $N ]; do
         i=$(($i+1))
         model="/home/data/models/$2/$3,$i,$1.model"
-        dimacs="/home/data/models/$2/$3,$i,$1.dimacs"
         if [ $1 = kconfigreader ]; then
-            cmd="/home/kconfigreader/run.sh de.fosd.typechef.kconfig.KConfigReader --fast --dumpconf $4 $writeDimacs $5 /home/data/models/$2/$3,$i,$1 | /home/measure_time | tee >(grep '#item time' >> $model) >(grep 'c time' >> $dimacs)"
+            start=`date +%s.%N`
+            cmd="/home/kconfigreader/run.sh de.fosd.typechef.kconfig.KConfigReader --fast --dumpconf $4 $5 /home/data/models/$2/$3,$i,$1"
             (echo $cmd | tee -a $LOG) && eval $cmd
+            end=`date +%s.%N`
             #echo "#item variables $(cat $dimacs | grep -E '^c [0-9]' | wc -l)" >> $model
             #echo "c variables $(cat $dimacs | grep -E ^p | cut -d' ' -f3)" >> $dimacs
             #echo "c literals $(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)" >> $dimacs
@@ -108,8 +104,8 @@ read-model() (
             end=`date +%s.%N`
             cmd="python3 /home/kclause2kconfigreader.py $model > $model.tmp && mv $model.tmp $model"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            echo "#item time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $model
         fi
+        echo "#item time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $model
     done
 )
 
@@ -157,39 +153,11 @@ run() (
         fi
         if [[ $2 != skip-model ]]; then
             echo "Reading feature model for $1 at $3" | tee -a $LOG
-            read-model $READER $1 $3 $binding_path $5 $6 $7
+            read-model $READER $1 $3 $binding_path $5 $6
         fi
         cd /home
     else
         echo "Skipping feature model for $1 at $3" | tee -a $LOG
     fi
-    echo $1,$3,$binding_path,$5,$6 >> $MODELS
-)
-
-list-systems() (
-    echo -n > $SYSTEMS
-    cd /home/data/models
-    echo system,tag,features,variables,clauses | tee -a $SYSTEMS
-    for system in *; do
-        cd $system
-        for file in $(ls *.$READER.model 2>/dev/null); do
-	    tag=$(basename $file .$READER.model)
-	    if ([ ! -f $tag.$READER.features ] || [ ! -f $tag.$READER.model ] || [ ! -f $tag.$READER.dimacs ]) ||
-	        ([ $READER = kconfigreader ] && [ ! -f $tag.$READER.rsf ]) ||
-	        ([ $READER = kmax ] && [ ! -f $tag.$READER.kclause ]); then
-	        echo "WARNING: some files are missing for $system at $tag"
-	    fi
-	    if [ -f $tag.$READER.dimacs ]; then
-	        /home/MiniSat_v1.14_linux $tag.$READER.dimacs > /dev/null
-	        if [ $? -ne 10 ]; then
-	            echo "WARNING: DIMACS for $system at $tag is unsatisfiable"
-	        fi
-	    fi
-	    features=$(wc -l $tag.$READER.features | cut -d' ' -f1)
-	    variables=$(cat $tag.$READER.dimacs 2>/dev/null | grep -E ^p | cut -d' ' -f3)
-	    clauses=$(cat $tag.$READER.dimacs 2>/dev/null | grep -E ^p | cut -d' ' -f4)
-	    echo $system,$tag,$features,$variables,$clauses | tee -a $SYSTEMS
-        done
-        cd ..
-    done
+    echo $1,$3,$binding_path,$5 >> $MODELS
 )

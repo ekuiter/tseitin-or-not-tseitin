@@ -1,20 +1,14 @@
 #!/bin/bash
 set -e
 shopt -s extglob # needed for @(...|...) syntax below
-READERS=(kconfigreader kclause) # Docker containers to use
+READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
 N=1 # number of iterations
 
-# stage 1: call kconfigreader (extraction phase) and kclause
-# stage 2: call Z3 and FeatureIDE
-# stage 3: call kconfigreader (transformation phase)
-# stage 4: call (#)SAT solvers
-
-# stage 1: extract feature models (DIMACS files for kconfigreader),
-# using recent versions of well-known Kconfig projects
-if [[ ! -d _dimacs ]] || [[ ! -d _models ]]; then
+# stage 1: extract feature models as .model files with kconfigreader-extract and kclause
+if [[ ! -d _models ]]; then
     # clean up previous (incomplete) files
-    rm -rf _dimacs _models kconfig_extractors/data_*
-    mkdir -p _dimacs _models
+    rm -rf kconfig_extractors/data_*
+    mkdir -p _models
 
     # extract feature models with kconfigreader and kclause
     for reader in ${READERS[@]}; do
@@ -26,7 +20,7 @@ if [[ ! -d _dimacs ]] || [[ ! -d _models ]]; then
         docker rm -f $reader || true
         docker run -m 16g -it --name $reader $reader ./extract_cnf.sh
 
-        # copy evaluation results from Docker into main machine
+        # copy evaluation results from Docker into host machine
         docker cp $reader:/home/data kconfig_extractors/data_$reader
 
         # remove Docker container
@@ -35,23 +29,11 @@ if [[ ! -d _dimacs ]] || [[ ! -d _models ]]; then
         # arrange files for further processing
         for system in kconfig_extractors/data_$reader/models/*; do
             system=$(basename $system)
-            for file in kconfig_extractors/data_$reader/models/$system/*.@(dimacs|model); do
-                file=$(basename $file)
-                if [[ $file == *".dimacs" ]]; then
-                    newfile=${file/$reader/$reader,$reader}
-                else
-                    newfile=$file
-                fi
-                cp kconfig_extractors/data_$reader/models/$system/$file _dimacs/$system,$newfile
+            for file in kconfig_extractors/data_$reader/models/$system/*.model; do
+                cp kconfig_extractors/data_$reader/models/$system/$(basename $file) _models/$system,$(basename $file)
             done
         done
     done
-
-    # clean up failures and unneeded files
-    rm -f _dimacs/freetz-ng*kconfigreader.dimacs # fails due to memory overflow
-
-    # move models for further processing
-    mv _dimacs/*.model _models/
 
     # add hierarchical models from Knüppel's "Is there a mismatch paper"
     rm -f _models/*.xml
@@ -64,14 +46,15 @@ if [[ ! -d _dimacs ]] || [[ ! -d _models ]]; then
     done
 fi
 
-# stage 2: extract DIMACS and SMT files with FeatureIDE and Z3
-if [[ ! -d _smt ]]; then
+# stage 2: transform .model files into .dimacs (FeatureIDE), .smt (z3), and .model (kconfigreader-transform)
+if [[ ! -d _transform ]] || [[ ! -d _dimacs ]]; then
     rm -rf spldev/data spldev/models* # todo: rename spldev (use stages?)
+    mkdir -p _transform _dimacs
     ls _models > spldev/models.txt
     mkdir -p spldev/models/
     cp _models/* spldev/models/
 
-    # build and run Docker image, similar as above
+    # build and run Docker image (analogous to above)
     docker build -f spldev/Dockerfile -t spldev spldev
     docker rm -f spldev || true
     docker run -m 16g -it --name spldev spldev evaluation-cnf/extract_cnf.sh
@@ -79,29 +62,28 @@ if [[ ! -d _smt ]]; then
     docker rm -f spldev
 
     # arrange files for further processing
-    for file in spldev/data/*/temp/*.@(dimacs|smt); do
-        newfile=$(basename $file | sed 's/\.model//g' | sed 's/_0//g' | tr _ ,)
-        cp $file _dimacs/$newfile
+    for file in spldev/data/*/temp/*.@(dimacs|smt|model); do
+        newfile=$(basename $file | sed 's/\.model\(.\)/\1/g' | sed 's/_0//g' | tr _ ,)
+        cp $file _transform/$newfile
     done
-    mkdir -p _transform
-    mv _dimacs/*.smt _transform
+    mv _transform/*.dimacs _dimacs
 fi
 
-# stage 3:
-for reader in ${READERS[@]}; do
-    rm -rf kconfig_extractors/$reader/transform
-    mkdir -p kconfig_extractors/$reader/transform/
-    cp _transform/* kconfig_extractors/$reader/transform/
-    docker build -f kconfig_extractors/$reader/Dockerfile -t $reader kconfig_extractors
-    docker rm -f $reader || true
-    docker run -m 16g -it --name $reader $reader ./transform_cnf.sh
-    docker cp $reader:/home/dimacs kconfig_extractors/data_$reader
-    docker rm -f $reader
-    cp kconfig_extractors/data_$reader/dimacs/* _dimacs/
-done
+# stage 3: transform .smt and .model files into .dimacs with z3 and kconfigreader-transform
+if ! ls _dimacs | grep -q z3; then
+    for reader in ${READERS[@]}; do
+        rm -rf kconfig_extractors/$reader/transform
+        mkdir -p kconfig_extractors/$reader/transform/
+        cp _transform/* kconfig_extractors/$reader/transform/
+        docker build -f kconfig_extractors/$reader/Dockerfile -t $reader kconfig_extractors
+        docker rm -f $reader || true
+        docker run -m 16g -it --name $reader $reader ./transform_cnf.sh
+        docker cp $reader:/home/dimacs kconfig_extractors/data_$reader
+        docker rm -f $reader
+        cp kconfig_extractors/data_$reader/dimacs/* _dimacs/
+    done
+fi
 
-# todo: export kclause/xml to formula to kconfigreader.model
-
-# todo: call kconfigreader (transformation phase) on these files
+# stage 4: call (#)SAT solvers
 
 # todo: solver stage

@@ -21,16 +21,16 @@ git-checkout linux https://github.com/torvalds/linux
 linux_env="ARCH=x86,SRCARCH=x86,KERNELVERSION=kcu,srctree=./,CC=cc,LD=ld,RUSTC=rustc"
 for tag in $(git -C linux tag | grep -v rc | grep -v tree | grep -v v2.6.11); do
     if git -C linux ls-tree -r $tag --name-only | grep -q arch/i386; then
-        run linux https://github.com/torvalds/linux $tag scripts/kconfig/*.o arch/i386/Kconfig $TAGS $linux_env # in old versions, x86 is called i386
+        run linux https://github.com/torvalds/linux $tag scripts/kconfig/*.o arch/i386/Kconfig $linux_env # in old versions, x86 is called i386
     else
-        run linux https://github.com/torvalds/linux $tag scripts/kconfig/*.o arch/x86/Kconfig $TAGS $linux_env
+        run linux https://github.com/torvalds/linux $tag scripts/kconfig/*.o arch/x86/Kconfig $linux_env
     fi
 done
 
 # axTLS
 svn-checkout axtls svn://svn.code.sf.net/p/axtls/code/trunk
 for tag in $(cd axtls; svn ls ^/tags); do
-    run axtls svn://svn.code.sf.net/p/axtls/code/tags/$(echo $tag | tr / ' ') $(echo $tag | tr / ' ') config/scripts/config/*.o config/Config.in $TAGS
+    run axtls svn://svn.code.sf.net/p/axtls/code/tags/$(echo $tag | tr / ' ') $(echo $tag | tr / ' ') config/scripts/config/*.o config/Config.in
 done
 
 # Buildroot
@@ -39,35 +39,35 @@ export BUILD_DIR=buildroot
 export BASE_DIR=buildroot
 git-checkout buildroot https://github.com/buildroot/buildroot
 for tag in $(git -C buildroot tag | grep -v rc | grep -v _ | grep -v -e '\..*\.'); do
-    run buildroot https://github.com/buildroot/buildroot $tag c-bindings/linux/v4.17.$BINDING Config.in $TAGS
+    run buildroot https://github.com/buildroot/buildroot $tag c-bindings/linux/v4.17.$BINDING Config.in
 done
 
 # BusyBox
 git-checkout busybox https://github.com/mirror/busybox
 for tag in $(git -C busybox tag | grep -v pre | grep -v alpha | grep -v rc); do
-    run busybox https://github.com/mirror/busybox $tag scripts/kconfig/*.o Config.in $TAGS
+    run busybox https://github.com/mirror/busybox $tag scripts/kconfig/*.o Config.in
 done
 
 # EmbToolkit
 git-checkout embtoolkit https://github.com/ndmsystems/embtoolkit
 for tag in $(git -C embtoolkit tag | grep -v rc | grep -v -e '-.*-'); do
-    run embtoolkit https://github.com/ndmsystems/embtoolkit $tag scripts/kconfig/*.o Kconfig $TAGS
+    run embtoolkit https://github.com/ndmsystems/embtoolkit $tag scripts/kconfig/*.o Kconfig
 done
 
 # Fiasco
-run fiasco https://github.com/kernkonzept/fiasco d393c79a5f67bb5466fa69b061ede0f81b6398db c-bindings/linux/v5.0.$BINDING src/Kconfig $TAGS
+run fiasco https://github.com/kernkonzept/fiasco d393c79a5f67bb5466fa69b061ede0f81b6398db c-bindings/linux/v5.0.$BINDING src/Kconfig
 
 # Freetz-NG
-run freetz-ng https://github.com/Freetz-NG/freetz-ng 88b972a6283bfd65ae1bbf559e53caf7bb661ae3 c-bindings/linux/v5.0.$BINDING config/Config.in "kconfigreader|rsf|features|model"
+run freetz-ng https://github.com/Freetz-NG/freetz-ng 88b972a6283bfd65ae1bbf559e53caf7bb661ae3 c-bindings/linux/v5.0.$BINDING config/Config.in
 
 # Toybox
 git-checkout toybox https://github.com/landley/toybox
 for tag in $(git -C toybox tag); do
-    run toybox https://github.com/landley/toybox $tag c-bindings/linux/v2.6.12.$BINDING Config.in $TAGS
+    run toybox https://github.com/landley/toybox $tag c-bindings/linux/v2.6.12.$BINDING Config.in
 done
 
 # uClibc-ng
 git-checkout uclibc-ng https://github.com/wbx-github/uclibc-ng
 for tag in $(git -C uclibc-ng tag); do
-    run uclibc-ng https://github.com/wbx-github/uclibc-ng $tag extra/config/zconf.tab.o extra/Configs/Config.in $TAGS
+    run uclibc-ng https://github.com/wbx-github/uclibc-ng $tag extra/config/zconf.tab.o extra/Configs/Config.in
 done

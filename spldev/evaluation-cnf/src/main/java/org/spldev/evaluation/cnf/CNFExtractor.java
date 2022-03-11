@@ -2,9 +2,6 @@ package org.spldev.evaluation.cnf;
 
 import org.spldev.evaluation.Evaluator;
 import org.spldev.evaluation.process.ProcessRunner;
-import org.spldev.evaluation.util.ModelReader;
-import org.spldev.formula.expression.Formula;
-import org.spldev.formula.expression.io.FormulaFormatManager;
 
 import java.util.Arrays;
 
@@ -24,9 +21,6 @@ public class CNFExtractor extends Evaluator {
 	@Override
 	public void evaluate() {
 		tabFormatter.setTabLevel(0);
-		final ModelReader<Formula> fmReader = new ModelReader<>();
-		fmReader.setPathToFiles(config.modelPath);
-		fmReader.setFormatSupplier(FormulaFormatManager.getInstance());
 		processRunner = new ProcessRunner();
 		processRunner.setTimeout(config.timeout.getValue() * 2);
 		for (systemIteration = 0; systemIteration < config.systemIterations.getValue(); systemIteration++) {

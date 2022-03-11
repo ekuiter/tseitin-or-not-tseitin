@@ -59,7 +59,7 @@ if [[ ! -d _dimacs ]] || [[ ! -d _models ]]; then
     while [ $i -ne $N ]; do
         i=$(($i+1))
         for m in hierarchies/*.xml; do
-            echo #cp $m _models/$(basename $m .xml),$i,hierarchy.xml
+            cp $m _models/$(basename $m .xml),$i,hierarchy.xml
         done
     done
 fi

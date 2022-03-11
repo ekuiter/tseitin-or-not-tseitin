@@ -5,27 +5,24 @@ import de.ovgu.featureide.fm.core.analysis.cnf.formula.FeatureModelFormula;
 import de.ovgu.featureide.fm.core.base.IFeatureModel;
 import de.ovgu.featureide.fm.core.io.dimacs.DIMACSFormatCNF;
 import de.ovgu.featureide.fm.core.io.manager.FeatureModelManager;
+import de.ovgu.featureide.fm.core.io.propositionalModel.MODELFormat;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.log.BasicLogManager;
 import org.sosy_lab.common.log.LogManager;
 import org.sosy_lab.java_smt.SolverContextFactory;
-import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.SolverContext;
 import org.spldev.evaluation.util.ModelReader;
 import org.spldev.formula.expression.Formula;
 import org.spldev.formula.expression.atomic.Atomic;
 import org.spldev.formula.expression.atomic.literal.VariableMap;
-import org.spldev.formula.expression.io.DIMACSFormat;
 import org.spldev.formula.expression.io.FormulaFormatManager;
-import org.spldev.formula.expression.transform.Transformer;
 import org.spldev.formula.solver.RuntimeTimeoutException;
 import org.spldev.formula.solver.javasmt.FormulaToJavaSmt;
 import org.spldev.util.data.Pair;
-import org.spldev.util.io.FileHandler;
-import org.spldev.util.job.Executor;
-import org.spldev.util.logging.Logger;
-import org.spldev.util.tree.Trees;
 import org.spldev.util.tree.structure.Tree;
 import org.spldev.util.tree.visitor.TreeVisitor;
 
@@ -39,9 +36,11 @@ import java.util.concurrent.*;
 
 public abstract class Transformation implements Serializable {
 	private static final long serialVersionUID = 1L;
+	@SuppressWarnings("StaticInitializerReferencesSubClass")
 	public static Transformation[] transformations = new Transformation[] {
-		new Z3(),
-		new FeatureIDE(),
+		// new FeatureIDE(),
+		//new Z3(),
+		new KConfigReader()
 	};
 
 	public Parameters parameters;
@@ -89,6 +88,7 @@ public abstract class Transformation implements Serializable {
 			'}';
 	}
 
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	protected <T> Result execute(Callable<T> method) {
 		final ExecutorService executor = Executors.newSingleThreadExecutor();
 		final Future<Result> future = executor.submit(() -> {
@@ -147,6 +147,32 @@ public abstract class Transformation implements Serializable {
 		}
 	}
 
+	public static class FeatureIDE extends Transformation {
+		@SuppressWarnings("unchecked")
+		@Override
+		public void run() {
+			// todo: use FeatureIDE 3.5.5
+			final IFeatureModel featureModel = FeatureModelManager
+					.load(Paths.get(parameters.rootPath).resolve(parameters.modelPath));
+			if (featureModel != null) {
+				Result<CNF> result = execute(() -> new FeatureModelFormula(featureModel).getCNF());
+				if (result != null) {
+					de.ovgu.featureide.fm.core.io.manager.FileHandler.save(getTempPath(), result.getValue(),
+							new DIMACSFormatCNF());
+					try {
+						Files.write(getTempPath(), ("c time " + result.getKey()).getBytes(), StandardOpenOption.APPEND);
+					} catch (IOException ignored) {
+					}
+				}
+			}
+		}
+
+		@Override
+		public String toString() {
+			return "featureide";
+		}
+	}
+
 	public static class Z3 extends Transformation {
 		@Override
 		public void run() throws IOException, InvalidConfigurationException {
@@ -175,35 +201,16 @@ public abstract class Transformation implements Serializable {
 		}
 	}
 
-	public static class FeatureIDE extends Transformation {
-		@Override
-		public void run() {
-			// todo: use FeatureIDE 3.5.5
-			final IFeatureModel featureModel = FeatureModelManager
-					.load(Paths.get(parameters.rootPath).resolve(parameters.modelPath));
-			if (featureModel != null) {
-				Result<CNF> result = execute(() -> new FeatureModelFormula(featureModel).getCNF());
-				if (result != null) {
-					de.ovgu.featureide.fm.core.io.manager.FileHandler.save(getTempPath(), result.getValue(),
-							new DIMACSFormatCNF());
-					try {
-						Files.write(getTempPath(), ("c time " + result.getKey()).getBytes(), StandardOpenOption.APPEND);
-					} catch (IOException e) {
-					}
-				}
-			}
-		}
-
-		@Override
-		public String toString() {
-			return "featureide";
-		}
-	}
-
 	public static class KConfigReader extends Transformation {
 		@Override
 		public void run() {
 			// todo: export kcr model format for input to kconfigreader-cnftransform (even for stage 1!)
+			final IFeatureModel featureModel = FeatureModelManager
+					.load(Paths.get(parameters.rootPath).resolve(parameters.modelPath));
+			if (featureModel != null) {
+				de.ovgu.featureide.fm.core.io.manager.FileHandler.save(getTempPath("model"), featureModel,
+						new KConfigReaderFormat());
+			}
 		}
 
 		@Override

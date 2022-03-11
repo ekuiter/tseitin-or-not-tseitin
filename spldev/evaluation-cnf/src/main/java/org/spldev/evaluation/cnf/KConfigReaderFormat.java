@@ -1,20 +1,22 @@
 package org.spldev.evaluation.cnf;
 
 import de.ovgu.featureide.fm.core.PluginID;
-import de.ovgu.featureide.fm.core.base.FeatureUtils;
-import de.ovgu.featureide.fm.core.base.IFeature;
-import de.ovgu.featureide.fm.core.base.IFeatureModel;
-import de.ovgu.featureide.fm.core.base.IFeatureStructure;
+import de.ovgu.featureide.fm.core.base.*;
+import de.ovgu.featureide.fm.core.editing.NodeCreator;
 import de.ovgu.featureide.fm.core.io.AFeatureModelFormat;
 import de.ovgu.featureide.fm.core.io.ProblemList;
-import org.prop4j.And;
-import org.prop4j.Node;
-import org.prop4j.NodeReader;
+import org.prop4j.*;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Alternatively, we could use FeatureIDE's MODELFormat.
+ * But, MODELFormat does not read non-Boolean constraints correctly and writes only CNFs.
+ */
 public class KConfigReaderFormat extends AFeatureModelFormat {
 	static class KconfigNodeReader extends NodeReader {
 		KconfigNodeReader() {
@@ -25,6 +27,25 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 			} catch (NoSuchFieldException | IllegalAccessException e) {
 				e.printStackTrace();
 			}
+		}
+	}
+
+	static class KconfigNodeWriter extends NodeWriter {
+		KconfigNodeWriter(Node root) {
+			super(root);
+			setEnforceBrackets(true);
+			try {
+				Field field = NodeWriter.class.getDeclaredField("symbols");
+				field.setAccessible(true);
+				field.set(this, new String[]{"!", "&", "|", "=>", "==", "?", "?", "?", "?"});
+			} catch (NoSuchFieldException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+		}
+
+		@Override
+		protected String variableToString(Object variable) {
+			return "def(" + super.variableToString(variable) + ")";
 		}
 	}
 
@@ -58,6 +79,34 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 		addNodeToFeatureModel(featureModel, andNode, andNode.getUniqueContainedFeatures());
 
 		return new ProblemList();
+	}
+
+	@Override
+	public String write(IFeatureModel featureModel) {
+		try {
+			NodeCreator nodeCreator = new NodeCreator();
+
+			final IFeature root = FeatureUtils.getRoot(featureModel);
+			final List<Node> nodes = new LinkedList<>();
+			if (root != null) {
+				nodes.add(new Literal(NodeCreator.getVariable(root.getName(), featureModel)));
+				Method method = NodeCreator.class.getDeclaredMethod("createNodes", Collection.class, IFeature.class, IFeatureModel.class, boolean.class, Map.class);
+				method.setAccessible(true);
+				method.invoke(nodeCreator, nodes, root, featureModel, true, Collections.emptyMap());
+			}
+			for (final IConstraint constraint : new ArrayList<>(featureModel.getConstraints())) {
+				nodes.add(constraint.getNode().clone());
+			}
+
+			StringBuilder sb = new StringBuilder();
+			for (Node node : nodes) {
+				sb.append(new KconfigNodeWriter(node).nodeToString().replace(" ", "")).append("\n");
+			}
+			return sb.toString();
+		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	/**
@@ -101,6 +150,11 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 
 	@Override
 	public boolean supportsRead() {
+		return true;
+	}
+
+	@Override
+	public boolean supportsWrite() {
 		return true;
 	}
 

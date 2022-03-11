@@ -88,9 +88,9 @@ read-model() (
         model="/home/data/models/$2/$3,$i,$1.model"
         dimacs="/home/data/models/$2/$3,$i,$1.dimacs"
         if [ $1 = kconfigreader ]; then
-            cmd="/home/kconfigreader/run.sh de.fosd.typechef.kconfig.KConfigReader --fast --dumpconf $4 $writeDimacs $5 /home/data/models/$2/$3,$i,$1 | /home/measure_time | tee >(grep '#meta time' >> $model) >(grep 'c time' >> $dimacs)"
+            cmd="/home/kconfigreader/run.sh de.fosd.typechef.kconfig.KConfigReader --fast --dumpconf $4 $writeDimacs $5 /home/data/models/$2/$3,$i,$1 | /home/measure_time | tee >(grep '#item time' >> $model) >(grep 'c time' >> $dimacs)"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            #echo "#meta variables $(cat $dimacs | grep -E '^c [0-9]' | wc -l)" >> $model
+            #echo "#item variables $(cat $dimacs | grep -E '^c [0-9]' | wc -l)" >> $model
             #echo "c variables $(cat $dimacs | grep -E ^p | cut -d' ' -f3)" >> $dimacs
             #echo "c literals $(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)" >> $dimacs
         elif [ $1 = kclause ]; then
@@ -108,7 +108,7 @@ read-model() (
             end=`date +%s.%N`
             cmd="python3 /home/kclause2kconfigreader.py $model > $model.tmp && mv $model.tmp $model"
             (echo $cmd | tee -a $LOG) && eval $cmd
-            echo "#meta time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $model
+            echo "#item time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $model
         fi
     done
 )

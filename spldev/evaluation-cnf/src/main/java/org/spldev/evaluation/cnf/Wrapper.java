@@ -27,11 +27,11 @@ public class Wrapper extends Algorithm<List<String>> {
 	}
 
 	@Override
-	public void postProcess() throws Exception {
+	public void postProcess() {
 	}
 
 	@Override
-	public List<String> parseResults() throws IOException {
+	public List<String> parseResults() {
 		return null;
 	}
 

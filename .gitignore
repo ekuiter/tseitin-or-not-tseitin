@@ -1,6 +1,5 @@
-/kconfig_extractors/data_kconfigreader
-/kconfig_extractors/data_kclause
-/kconfig_extractors/kclause/smt
+/kconfig_extractors/data_*
+/kconfig_extractors/*/transform
 /spldev/data
 /spldev/models*
 /_*

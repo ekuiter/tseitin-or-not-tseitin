@@ -16,7 +16,7 @@ source extract_setup.sh
 # Also, model/DIMACS files produced by kconfigreader have nondeterministic clause order.
 
 # Run the analysis.
-# linux_env="ARCH=x86,SRCARCH=x86,KERNELVERSION=kcu,srctree=./,CC=cc,LD=ld,RUSTC=rustc"
+linux_env="ARCH=x86,SRCARCH=x86,KERNELVERSION=kcu,srctree=./,CC=cc,LD=ld,RUSTC=rustc"
 # run linux skip-model v2.6.12 scripts/kconfig/*.o arch/i386/Kconfig "" $linux_env
 # run linux skip-model v4.17 scripts/kconfig/*.o arch/x86/Kconfig "" $linux_env
 # run linux git v4.18 scripts/kconfig/*.o arch/x86/Kconfig "" $linux_env

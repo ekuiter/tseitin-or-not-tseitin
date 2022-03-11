@@ -4,7 +4,7 @@
 
 ### Getting Started
 
-First, [install Docker](https://docs.docker.com/get-docker/). On Arch Linux, run:
+First, [install Docker](https://docs.docker.com/get-docker/) on a Linux system (or virtual machine). On Arch Linux, for example, run:
 
 ```
 usermod -aG docker $(whoami) # then, log out and in again

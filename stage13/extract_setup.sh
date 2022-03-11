@@ -86,9 +86,6 @@ read-model() (
             cmd="/home/kconfigreader/run.sh de.fosd.typechef.kconfig.KConfigReader --fast --dumpconf $4 $5 /home/data/models/$2/$3,$i,$1"
             (echo $cmd | tee -a $LOG) && eval $cmd
             end=`date +%s.%N`
-            #echo "#item variables $(cat $dimacs | grep -E '^c [0-9]' | wc -l)" >> $model
-            #echo "c variables $(cat $dimacs | grep -E ^p | cut -d' ' -f3)" >> $dimacs
-            #echo "c literals $(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)" >> $dimacs
         elif [ $1 = kclause ]; then
             start=`date +%s.%N`
             cmd="$4 --extract -o /home/data/models/$2/$3,$i,$1.kclause $env $5"

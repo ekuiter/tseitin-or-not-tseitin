@@ -37,7 +37,8 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 			try {
 				Field field = NodeWriter.class.getDeclaredField("symbols");
 				field.setAccessible(true);
-				field.set(this, new String[]{"!", "&", "|", "=>", "==", "?", "?", "?", "?"});
+				// nonstandard operators are not supported
+				field.set(this, new String[]{"!", "&", "|", "=>", "==", "<ERR>", "<ERR>", "<ERR>", "<ERR>"});
 			} catch (NoSuchFieldException | IllegalAccessException e) {
 				e.printStackTrace();
 			}
@@ -99,7 +100,12 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 			}
 
 			StringBuilder sb = new StringBuilder();
+			Method method = Node.class.getDeclaredMethod("eliminateNonCNFOperators");
+			method.setAccessible(true);
 			for (Node node : nodes) {
+				// replace nonstandard operators (usually, only AtMost for alternatives) with hardcoded CNF patterns
+				node = (Node) method.invoke(node);
+				// append constraint to the built .model file
 				sb.append(new KconfigNodeWriter(node).nodeToString().replace(" ", "")).append("\n");
 			}
 			return sb.toString();

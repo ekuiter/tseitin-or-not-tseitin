@@ -85,15 +85,13 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 	@Override
 	public String write(IFeatureModel featureModel) {
 		try {
-			NodeCreator nodeCreator = new NodeCreator();
-
 			final IFeature root = FeatureUtils.getRoot(featureModel);
 			final List<Node> nodes = new LinkedList<>();
 			if (root != null) {
 				nodes.add(new Literal(NodeCreator.getVariable(root.getName(), featureModel)));
 				Method method = NodeCreator.class.getDeclaredMethod("createNodes", Collection.class, IFeature.class, IFeatureModel.class, boolean.class, Map.class);
 				method.setAccessible(true);
-				method.invoke(nodeCreator, nodes, root, featureModel, true, Collections.emptyMap());
+				method.invoke(NodeCreator.class, nodes, root, featureModel, true, Collections.emptyMap());
 			}
 			for (final IConstraint constraint : new ArrayList<>(featureModel.getConstraints())) {
 				nodes.add(constraint.getNode().clone());

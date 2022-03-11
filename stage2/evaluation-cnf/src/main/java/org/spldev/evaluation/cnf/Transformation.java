@@ -1,11 +1,8 @@
 package org.spldev.evaluation.cnf;
 
-import de.ovgu.featureide.fm.core.analysis.cnf.CNF;
-import de.ovgu.featureide.fm.core.analysis.cnf.formula.FeatureModelFormula;
 import de.ovgu.featureide.fm.core.base.IFeatureModel;
-import de.ovgu.featureide.fm.core.io.dimacs.DIMACSFormatCNF;
+import de.ovgu.featureide.fm.core.io.dimacs.DIMACSFormat;
 import de.ovgu.featureide.fm.core.io.manager.FeatureModelManager;
-import de.ovgu.featureide.fm.core.io.propositionalModel.MODELFormat;
 import org.sosy_lab.common.ShutdownManager;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
@@ -148,21 +145,17 @@ public abstract class Transformation implements Serializable {
 	}
 
 	public static class FeatureIDE extends Transformation {
-		@SuppressWarnings("unchecked")
 		@Override
 		public void run() {
-			// todo: use FeatureIDE 3.5.5
 			final IFeatureModel featureModel = FeatureModelManager
 					.load(Paths.get(parameters.rootPath).resolve(parameters.modelPath));
 			if (featureModel != null) {
-				Result<CNF> result = execute(() -> new FeatureModelFormula(featureModel).getCNF());
-				if (result != null) {
-					de.ovgu.featureide.fm.core.io.manager.FileHandler.save(getTempPath(), result.getValue(),
-							new DIMACSFormatCNF());
-					try {
-						Files.write(getTempPath(), ("c time " + result.getKey()).getBytes(), StandardOpenOption.APPEND);
-					} catch (IOException ignored) {
-					}
+				Result<?> result = execute(() ->
+						de.ovgu.featureide.fm.core.io.manager.FileHandler.save(getTempPath(), featureModel,
+								new DIMACSFormat()));
+				try {
+					Files.write(getTempPath(), ("c time " + result.getKey()).getBytes(), StandardOpenOption.APPEND);
+				} catch (IOException ignored) {
 				}
 			}
 		}
@@ -204,7 +197,6 @@ public abstract class Transformation implements Serializable {
 	public static class KConfigReader extends Transformation {
 		@Override
 		public void run() {
-			// todo: export kcr model format for input to kconfigreader-cnftransform (even for stage 1!)
 			final IFeatureModel featureModel = FeatureModelManager
 					.load(Paths.get(parameters.rootPath).resolve(parameters.modelPath));
 			if (featureModel != null) {

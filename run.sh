@@ -57,7 +57,8 @@ if [[ ! -d _transform ]] || [[ ! -d _dimacs ]]; then
     # build and run Docker image (analogous to above)
     docker build -f stage2/Dockerfile -t stage2 stage2
     docker rm -f stage2 || true
-    docker run -m 16g -it --name stage2 stage2 evaluation-cnf/extract_cnf.sh
+    # todo: FeatureIDE 3.8.0 or 3.5.5?
+    docker run -m 16g -it --name stage2 stage2 evaluation-cnf/transform_cnf.sh
     docker cp stage2:/home/spldev/evaluation-cnf/output stage2/data
     docker rm -f stage2
 

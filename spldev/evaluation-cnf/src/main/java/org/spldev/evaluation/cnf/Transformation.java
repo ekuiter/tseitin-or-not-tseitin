@@ -112,25 +112,6 @@ public abstract class Transformation implements Serializable {
 		return null;
 	}
 
-	protected Result<Formula> executeTransformer(Formula formula, Transformer transformer) {
-		return execute(() -> Executor.run(transformer, formula).orElse(Logger::logProblems));
-	}
-
-	protected Formula readFormula(Path path) {
-		final ModelReader<Formula> fmReader = new ModelReader<>();
-		fmReader.setPathToFiles(Paths.get(parameters.rootPath));
-		fmReader.setFormatSupplier(FormulaFormatManager.getInstance());
-		return fmReader.read(path.toString()).orElseThrow(p -> new RuntimeException("no feature model"));
-	}
-
-	protected void writeFormula(Formula formula, Path path) {
-		try {
-			FileHandler.save(formula, path, new DIMACSFormat());
-		} catch (final IOException e) {
-			e.printStackTrace();
-		}
-	}
-
 	protected Path getTempPath(String suffix) {
 		return Paths.get(parameters.tempPath).resolve(
 			String.format("%s_%s_%d.%s",
@@ -167,33 +148,25 @@ public abstract class Transformation implements Serializable {
 	}
 
 	public static class Z3 extends Transformation {
-		private static Configuration config;
-		private static LogManager logManager;
-		private static SolverContext context;
-		private static ShutdownManager shutdownManager;
-		private static FormulaManager formulaManager;
-		private static BooleanFormulaManager booleanFormulaManager;
-
-		static {
-			try {
-				config = Configuration.defaultConfiguration();
-				logManager = BasicLogManager.create(config);
-				shutdownManager = ShutdownManager.create();
-				context = SolverContextFactory.createSolverContext(config, logManager, shutdownManager
-						.getNotifier(), SolverContextFactory.Solvers.Z3);
-				formulaManager = context.getFormulaManager();
-				booleanFormulaManager = formulaManager.getBooleanFormulaManager();
-			} catch (InvalidConfigurationException e) {
-				e.printStackTrace();
-			}
-		}
-
 		@Override
-		public void run() throws IOException {
-			Formula formula = readFormula(Paths.get(parameters.modelPath));
+		public void run() throws IOException, InvalidConfigurationException {
+			final ModelReader<Formula> fmReader = new ModelReader<>();
+			fmReader.setPathToFiles(Paths.get(parameters.rootPath));
+			fmReader.setFormatSupplier(FormulaFormatManager.getInstance());
+			Formula formula = fmReader.read(Paths.get(parameters.modelPath).toString())
+					.orElseThrow(p -> new RuntimeException("no feature model"));
 			VariableMap variableMap = VariableMap.fromExpression(formula);
+
+			Configuration config = Configuration.defaultConfiguration();
+			LogManager logManager = BasicLogManager.create(config);
+			ShutdownManager shutdownManager = ShutdownManager.create();
+			SolverContext context = SolverContextFactory.createSolverContext(config, logManager, shutdownManager
+					.getNotifier(), SolverContextFactory.Solvers.Z3);
+			FormulaManager formulaManager = context.getFormulaManager();
 			BooleanFormula input = new FormulaToJavaSmt(context, variableMap).nodeToFormula(formula);
-			Files.write(Paths.get(getTempPath("smt").toString()), formulaManager.dumpFormula(input).toString().getBytes());
+
+			Files.write(Paths.get(getTempPath("smt").toString()),
+					formulaManager.dumpFormula(input).toString().getBytes());
 		}
 
 		@Override
@@ -206,9 +179,6 @@ public abstract class Transformation implements Serializable {
 		@Override
 		public void run() {
 			// todo: use FeatureIDE 3.5.5
-			Formula formula = readFormula(Paths.get(parameters.modelPath));
-			int variables = VariableMap.fromExpression(formula).size();
-			int literals = Trees.traverse(formula, new LiteralsCounter()).get();
 			final IFeatureModel featureModel = FeatureModelManager
 					.load(Paths.get(parameters.rootPath).resolve(parameters.modelPath));
 			if (featureModel != null) {
@@ -217,13 +187,9 @@ public abstract class Transformation implements Serializable {
 					de.ovgu.featureide.fm.core.io.manager.FileHandler.save(getTempPath(), result.getValue(),
 							new DIMACSFormatCNF());
 					try {
-					Files.write(getTempPath(), (
-						"c time_transform " + result.getKey() + "\n" +
-						"c variables_extract " + variables + "\n" +
-						"c literals_extract " + literals + "\n"
-					).getBytes(), StandardOpenOption.APPEND);
-				} catch (IOException e) {
-				}
+						Files.write(getTempPath(), ("c time " + result.getKey()).getBytes(), StandardOpenOption.APPEND);
+					} catch (IOException e) {
+					}
 				}
 			}
 		}
@@ -231,6 +197,18 @@ public abstract class Transformation implements Serializable {
 		@Override
 		public String toString() {
 			return "featureide";
+		}
+	}
+
+	public static class KConfigReader extends Transformation {
+		@Override
+		public void run() {
+			// todo: export kcr model format for input to kconfigreader-cnftransform (even for stage 1!)
+		}
+
+		@Override
+		public String toString() {
+			return "kconfigreader";
 		}
 	}
 }

@@ -83,20 +83,22 @@ if [[ ! -d _smt ]]; then
         newfile=$(basename $file | sed 's/\.model//g' | sed 's/_0//g' | tr _ ,)
         cp $file _dimacs/$newfile
     done
-    mkdir -p _smt
-    mv _dimacs/*.smt _smt
+    mkdir -p _transform
+    mv _dimacs/*.smt _transform
 fi
 
 # stage 3:
-rm -rf kconfig_extractors/kclause/smt
-mkdir -p kconfig_extractors/kclause/smt/
-cp _smt/* kconfig_extractors/kclause/smt/
-docker build -f kconfig_extractors/kclause/Dockerfile -t kclause kconfig_extractors
-docker rm -f kclause || true
-docker run -m 16g -it --name kclause kclause ./transform_cnf.sh
-docker cp kclause:/home/dimacs kconfig_extractors/data_kclause
-docker rm -f kclause
-cp kconfig_extractors/data_kclause/dimacs/* _dimacs/
+for reader in ${READERS[@]}; do
+    rm -rf kconfig_extractors/$reader/transform
+    mkdir -p kconfig_extractors/$reader/transform/
+    cp _transform/* kconfig_extractors/$reader/transform/
+    docker build -f kconfig_extractors/$reader/Dockerfile -t $reader kconfig_extractors
+    docker rm -f $reader || true
+    docker run -m 16g -it --name $reader $reader ./transform_cnf.sh
+    docker cp $reader:/home/dimacs kconfig_extractors/data_$reader
+    docker rm -f $reader
+    cp kconfig_extractors/data_$reader/dimacs/* _dimacs/
+done
 
 # todo: export kclause/xml to formula to kconfigreader.model
 

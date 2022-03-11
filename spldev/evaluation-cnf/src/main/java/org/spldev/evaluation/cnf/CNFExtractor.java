@@ -7,7 +7,6 @@ import org.spldev.formula.expression.Formula;
 import org.spldev.formula.expression.io.FormulaFormatManager;
 
 import java.util.Arrays;
-import java.util.List;
 
 public class CNFExtractor extends Evaluator {
 	protected ProcessRunner processRunner;
@@ -36,38 +35,24 @@ public class CNFExtractor extends Evaluator {
 				String system = modelPath
 					.replace(".kconfigreader.model", "")
 					.replace(".xml", "");
-				if (systemIteration == 0) {
-					//Formula formula = fmReader.read(modelPath).orElseThrow(p -> new RuntimeException(
-					//	"no feature model"));
-					// VariableMap.fromExpression(formula).size()); // todo
-					// NormalForms.simplifyForNF(formula).getChildren().size()); // todo
-				}
 				Parameters parameters = new Parameters(
 					system, config.modelPath.toString(),
 					modelPath, systemIteration, config.tempPath.toString(), config.timeout.getValue());
 				tabFormatter.setTabLevel(0);
 				logSystem();
 				tabFormatter.setTabLevel(1);
-				Arrays.stream(Transformation.transformations).forEach(transformation -> {
-					List<String> results = evaluateForParameters(parameters, transformation);
-					// writeCSV(writer, writer -> {
-					// 	writer.addValue(systemIndex);
-					// 	writer.addValue(systemIteration);
-					// 	writer.addValue(transformation.toString());
-					// 	results.forEach(writer::addValue);
-					// });
-				});
+				Arrays.stream(Transformation.transformations).forEach(transformation ->
+						evaluateForParameters(parameters, transformation));
 			}
 		}
 	}
 
-	private List<String> evaluateForParameters(Parameters parameters, Transformation transformation) {
+	private void evaluateForParameters(Parameters parameters, Transformation transformation) {
 		tabFormatter.setTabLevel(2);
 		transformation.setParameters(parameters);
 		Wrapper wrapper = new Wrapper(transformation);
 		tabFormatter.incTabLevel();
-		List<String> results = processRunner.run(wrapper).getResult();
+		processRunner.run(wrapper);
 		tabFormatter.decTabLevel();
-		return results;
 	}
 }

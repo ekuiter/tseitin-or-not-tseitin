@@ -39,7 +39,10 @@ RUN apt-get update && apt-get install -y --allow-unauthenticated \
 # - SAT solver for consistency checking
 # - time measurement wrapper
 # - evaluation scripts
-COPY kconfigreader/dumpconf.c MiniSat_v1.14_linux kconfigreader/measure_time.c *.sh ./
+# - CNF transformer
+COPY kconfigreader/TransformCNF.scala kconfigreader/src/main/scala/
+RUN cd kconfigreader && sbt mkrun
+COPY kconfigreader/dumpconf.c MiniSat_v1.14_linux kconfigreader/measure_time.c *.sh kconfigreader/transform* ./
 RUN chmod +x MiniSat_v1.14_linux \
   && gcc -o measure_time measure_time.c \
   && chmod +x *.sh

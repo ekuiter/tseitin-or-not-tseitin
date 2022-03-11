@@ -13,13 +13,9 @@ systemctl enable docker
 systemctl start docker
 ```
 
-Then, run the evaluation:
+Then, run the evaluation with `./run.sh`. To re-run the evaluation, run `rm -rf _* && ./run.sh`.
 
-```
-./run.sh
-```
-
-After stage one is finished, DIMACS files will be written to the `dimacs_files` directory, named after the following scheme:
+As a result, DIMACS files will be written to the `dimacs_files` directory, named after the following scheme:
 
 ```
 [project],[version],[iteration],[source: kconfigreader|kclause|hierarchy],[transformation: kconfigreader|kclause|featureide|z3].dimacs

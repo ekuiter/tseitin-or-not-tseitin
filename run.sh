@@ -7,13 +7,13 @@ N=1 # number of iterations
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d _models ]]; then
     # clean up previous (incomplete) files
-    rm -rf kconfig_extractors/data_*
+    rm -rf stage13/data_*
     mkdir -p _models
 
     # extract feature models with kconfigreader and kclause
     for reader in ${READERS[@]}; do
         # build Docker image
-        docker build -f kconfig_extractors/$reader/Dockerfile -t $reader kconfig_extractors
+        docker build -f stage13/$reader/Dockerfile -t $reader stage13
 
         # run evaluation script inside Docker container
         # for other evaluations, you can run other scripts (e.g., extract_all.sh)
@@ -21,16 +21,16 @@ if [[ ! -d _models ]]; then
         docker run -m 16g -it --name $reader $reader ./extract_cnf.sh
 
         # copy evaluation results from Docker into host machine
-        docker cp $reader:/home/data kconfig_extractors/data_$reader
+        docker cp $reader:/home/data stage13/data_$reader
 
         # remove Docker container
         docker rm -f $reader
         
         # arrange files for further processing
-        for system in kconfig_extractors/data_$reader/models/*; do
+        for system in stage13/data_$reader/models/*; do
             system=$(basename $system)
-            for file in kconfig_extractors/data_$reader/models/$system/*.model; do
-                cp kconfig_extractors/data_$reader/models/$system/$(basename $file) _models/$system,$(basename $file)
+            for file in stage13/data_$reader/models/$system/*.model; do
+                cp stage13/data_$reader/models/$system/$(basename $file) _models/$system,$(basename $file)
             done
         done
     done
@@ -48,21 +48,21 @@ fi
 
 # stage 2: transform .model files into .dimacs (FeatureIDE), .smt (z3), and .model (kconfigreader-transform)
 if [[ ! -d _transform ]] || [[ ! -d _dimacs ]]; then
-    rm -rf spldev/data spldev/models* # todo: rename spldev (use stages?)
+    rm -rf stage2/data stage2/models*
     mkdir -p _transform _dimacs
-    ls _models > spldev/models.txt
-    mkdir -p spldev/models/
-    cp _models/* spldev/models/
+    ls _models > stage2/models.txt
+    mkdir -p stage2/models/
+    cp _models/* stage2/models/
 
     # build and run Docker image (analogous to above)
-    docker build -f spldev/Dockerfile -t spldev spldev
-    docker rm -f spldev || true
-    docker run -m 16g -it --name spldev spldev evaluation-cnf/extract_cnf.sh
-    docker cp spldev:/home/spldev/evaluation-cnf/output spldev/data
-    docker rm -f spldev
+    docker build -f stage2/Dockerfile -t stage2 stage2
+    docker rm -f stage2 || true
+    docker run -m 16g -it --name stage2 stage2 evaluation-cnf/extract_cnf.sh
+    docker cp stage2:/home/spldev/evaluation-cnf/output stage2/data
+    docker rm -f stage2
 
     # arrange files for further processing
-    for file in spldev/data/*/temp/*.@(dimacs|smt|model); do
+    for file in stage2/data/*/temp/*.@(dimacs|smt|model); do
         newfile=$(basename $file | sed 's/\.model\(.\)/\1/g' | sed 's/_0//g' | tr _ ,)
         cp $file _transform/$newfile
     done
@@ -72,15 +72,15 @@ fi
 # stage 3: transform .smt and .model files into .dimacs with z3 and kconfigreader-transform
 if ! ls _dimacs | grep -q z3; then
     for reader in ${READERS[@]}; do
-        rm -rf kconfig_extractors/$reader/transform
-        mkdir -p kconfig_extractors/$reader/transform/
-        cp _transform/* kconfig_extractors/$reader/transform/
-        docker build -f kconfig_extractors/$reader/Dockerfile -t $reader kconfig_extractors
+        rm -rf stage13/$reader/transform
+        mkdir -p stage13/$reader/transform/
+        cp _transform/* stage13/$reader/transform/
+        docker build -f stage13/$reader/Dockerfile -t $reader stage13
         docker rm -f $reader || true
         docker run -m 16g -it --name $reader $reader ./transform_cnf.sh
-        docker cp $reader:/home/dimacs kconfig_extractors/data_$reader
+        docker cp $reader:/home/dimacs stage13/data_$reader
         docker rm -f $reader
-        cp kconfig_extractors/data_$reader/dimacs/* _dimacs/
+        cp stage13/data_$reader/dimacs/* _dimacs/
     done
 fi
 

@@ -1,5 +1,5 @@
-/kconfig_extractors/data_*
-/kconfig_extractors/*/transform
-/spldev/data
-/spldev/models*
+/stage13/data_*
+/stage13/*/transform
+/stage2/data
+/stage2/models*
 /_*

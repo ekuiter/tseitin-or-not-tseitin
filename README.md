@@ -13,10 +13,10 @@ systemctl enable docker
 systemctl start docker
 ```
 
-Then, run the evaluation with `./run.sh`.
-To re-run the evaluation, run `rm -rf _* && ./run.sh`.
+Then, run the evaluation with `./extract_and_transform_cnf.sh`.
+To re-run the evaluation, run `rm -rf _* && ./extract_and_transform_cnf.sh`.
 You can control which stages to (re-)run by prepolutating/removing files in the `_models`, `_transform`, and `_dimacs` directories.
-For an overview over the individual stages, see the source code of `run.sh`.
+For an overview over the individual stages, see the scripts' source code.
 
 The transformed DIMACS files are stored in the `_dimacs` directory, named after the following scheme:
 

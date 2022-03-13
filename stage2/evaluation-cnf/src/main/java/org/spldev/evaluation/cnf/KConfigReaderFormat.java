@@ -52,6 +52,17 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 
 	public static final String ID = PluginID.PLUGIN_ID + ".format.fm." + KConfigReaderFormat.class.getSimpleName();
 
+	private static String fixNonBooleanConstraints(String l) {
+		return l.replace("=", "_")
+				.replace(":", "_")
+				.replace(".", "_")
+				.replace(",", "_")
+				.replace("/", "_")
+				.replace("\\", "_")
+				.replace(" ", "_")
+				.replace("-", "_");
+	}
+
 	@Override
 	public ProblemList read(IFeatureModel featureModel, CharSequence source) {
 		setFactory(featureModel);
@@ -61,15 +72,7 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 			.map(String::trim) //
 			.filter(l -> !l.isEmpty()) //
 			.filter(l -> !l.startsWith("#")) //
-			// fix non-boolean constraints
-			.map(l -> l.replace("=", "_"))
-			.map(l -> l.replace(":", "_"))
-			.map(l -> l.replace(".", "_"))
-			.map(l -> l.replace(",", "_"))
-			.map(l -> l.replace("/", "_"))
-			.map(l -> l.replace("\\", "_"))
-			.map(l -> l.replace(" ", "_"))
-			.map(l -> l.replace("-", "_"))
+			.map(KConfigReaderFormat::fixNonBooleanConstraints)
 			.map(l -> l.replaceAll("def\\((\\w+)\\)", "$1"))
 			.map(nodeReader::stringToNode) //
 			.filter(Objects::nonNull) // ignore non-Boolean constraints
@@ -104,7 +107,8 @@ public class KConfigReaderFormat extends AFeatureModelFormat {
 				// replace nonstandard operators (usually, only AtMost for alternatives) with hardcoded CNF patterns
 				node = (Node) method.invoke(node);
 				// append constraint to the built .model file
-				sb.append(new KconfigNodeWriter(node).nodeToString().replace(" ", "")).append("\n");
+				sb.append(fixNonBooleanConstraints(
+						new KconfigNodeWriter(node).nodeToString().replace(" ", ""))).append("\n");
 			}
 			return sb.toString();
 		} catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {

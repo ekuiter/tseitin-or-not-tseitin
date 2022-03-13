@@ -18,7 +18,7 @@ public class Runner {
 		FMFormatManager.getInstance().addExtension(new KConfigReaderFormat());
 		Transformation transformation = Transformation.read(Paths.get(args[0]));
 		Objects.requireNonNull(transformation);
-		System.out.println(transformation);
+		System.out.println(transformation.parameters);
 		transformation.run();
 	}
 }

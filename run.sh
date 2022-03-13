@@ -101,6 +101,7 @@ fi
 
 # stage 5: collect statistics in CSV file
 res=_results.csv
+err=_error.log
 if [ ! -f $res ]; then
     echo system,iteration,source,extract_time,extract_variables,extract_literals,transformation,transform_time,transform_variables,transform_literals >> $res
 
@@ -108,7 +109,7 @@ if [ ! -f $res ]; then
         system_tag=$(echo $system | tr , _)
         model_num=$(ls _models/$system* 2>/dev/null | wc -l)
         if ! ([ $model_num -eq $(( 2*$N )) ] || ([ $model_num -eq $N ] && (ls _models/$system* | grep -q hierarchy))); then
-            echo "WARNING: Missing feature models for $system"
+            echo "WARNING: Missing feature models for $system" | tee -a $err
         else
             i=0
             while [ $i -ne $N ]; do
@@ -117,9 +118,15 @@ if [ ! -f $res ]; then
                     if [ -f _models/$system,$i,$source* ]; then
                         model=_models/$system,$i,$source.model
                         echo Processing $model
-                        extract_time=$(cat $model | grep "#item time" | cut -d' ' -f3)
-                        extract_variables=$(cat $model | sed "s/)/)\n/g" | grep "def(" | sed "s/.*def(\(.*\)).*/\1/g" | sort | uniq | wc -l)
-                        extract_literals=$(cat $model | sed "s/)/)\n/g" | grep "def(" | wc -l)
+                        if [ -f $model ]; then
+                            extract_time=$(cat $model | grep "#item time" | cut -d' ' -f3)
+                            extract_variables=$(cat $model | sed "s/)/)\n/g" | grep "def(" | sed "s/.*def(\(.*\)).*/\1/g" | sort | uniq | wc -l)
+                            extract_literals=$(cat $model | sed "s/)/)\n/g" | grep "def(" | wc -l)
+                        else
+                            extract_time=NA
+                            extract_variables=NA
+                            extract_literals=NA
+                        fi
                         for transformation in featureide z3 kconfigreader; do
                             if [ -f _dimacs/$system,$i,$source,$transformation* ]; then
                                 dimacs=_dimacs/$system,$i,$source,$transformation.dimacs
@@ -129,7 +136,7 @@ if [ ! -f $res ]; then
                                 transform_literals=$(cat $dimacs | grep -E "^[^pc]" | grep -Fo ' ' | wc -l)
                                 echo $system_tag,$i,$source,$extract_time,$extract_variables,$extract_literals,$transformation,$transform_time,$transform_variables,$transform_literals >> $res
                             else
-                                echo "WARNING: Missing DIMACS file for $system with source $source and transformation $transformation"
+                                echo "WARNING: Missing DIMACS file for $system with source $source and transformation $transformation" | tee -a $err
                                 echo $system_tag,$i,$source,$extract_time,$extract_variables,$extract_literals,$transformation,NA,NA,NA >> $res
                             fi
                         done

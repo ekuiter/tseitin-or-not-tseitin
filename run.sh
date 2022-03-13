@@ -70,7 +70,7 @@ if [[ ! -d _transform ]] || [[ ! -d _dimacs ]]; then
 
     # arrange files for further processing
     for file in stage2/data/*/temp/*.@(dimacs|smt|model); do
-        newfile=$(basename $file | sed 's/\.model_/,/g' | sed 's/_0//g')
+        newfile=$(basename $file | sed 's/\.model_/,/g' | sed 's/hierarchy_/hierarchy,/g' | sed 's/_0\././g')
         cp $file _transform/$newfile
     done
     mv _transform/*.dimacs _dimacs

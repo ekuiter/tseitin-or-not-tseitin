@@ -20,6 +20,7 @@ import org.spldev.formula.expression.io.FormulaFormatManager;
 import org.spldev.formula.solver.RuntimeTimeoutException;
 import org.spldev.formula.solver.javasmt.FormulaToJavaSmt;
 import org.spldev.util.data.Pair;
+import org.spldev.util.tree.Trees;
 import org.spldev.util.tree.structure.Tree;
 import org.spldev.util.tree.visitor.TreeVisitor;
 
@@ -186,6 +187,11 @@ public abstract class Transformation implements Serializable {
 
 			Files.write(Paths.get(getTempPath("smt").toString()),
 					formulaManager.dumpFormula(input).toString().getBytes());
+			Files.write(Paths.get(parameters.tempPath).resolve(
+							String.format("%s_%d.stats",
+									parameters.system.replaceAll("[/]", "_"),
+									parameters.iteration)),
+					(variableMap.size() + " " + Trees.traverse(formula, new LiteralsCounter()).get()).getBytes());
 		}
 
 		@Override

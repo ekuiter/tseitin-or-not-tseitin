@@ -54,9 +54,9 @@ else
 fi
 
 # stage 2: transform .model files into .dimacs (FeatureIDE), .smt (z3), and .model (kconfigreader-transform)
-if [[ ! -d _transform ]] || [[ ! -d _dimacs ]]; then
+if [[ ! -d _intermediate ]] || [[ ! -d _dimacs ]]; then
     rm -rf stage2/data stage2/models*
-    mkdir -p _transform _dimacs
+    mkdir -p _intermediate _dimacs
     ls _models > stage2/models.txt
     mkdir -p stage2/models/
     cp _models/* stage2/models/
@@ -69,11 +69,13 @@ if [[ ! -d _transform ]] || [[ ! -d _dimacs ]]; then
     docker rm -f stage2
 
     # arrange files for further processing
-    for file in stage2/data/*/temp/*.@(dimacs|smt|model); do
-        newfile=$(basename $file | sed 's/\.model_/,/g' | sed 's/hierarchy_/hierarchy,/g' | sed 's/_0\././g')
-        cp $file _transform/$newfile
+    for file in stage2/data/*/temp/*.@(dimacs|smt|model|stats); do
+        newfile=$(basename $file | sed 's/\.model_/,/g' | sed 's/_0\././g' | sed 's/hierarchy_/hierarchy,/g')
+        if [[ $newfile != *.stats ]] || [[ $newfile == *hierarchy* ]]; then
+            cp $file _intermediate/$newfile
+        fi
     done
-    mv _transform/*.dimacs _dimacs
+    mv _intermediate/*.dimacs _dimacs
 else
     echo Skipping stage 2
 fi
@@ -83,7 +85,7 @@ if ! ls _dimacs | grep -q z3; then
     for reader in ${READERS[@]}; do
         rm -rf stage13/$reader/transform
         mkdir -p stage13/$reader/transform/
-        cp _transform/* stage13/$reader/transform/
+        cp _intermediate/*.@(smt|model) stage13/$reader/transform/
         docker build -f stage13/$reader/Dockerfile -t $reader stage13
         docker rm -f $reader || true
         docker run -m 16g -e TIMEOUT -it --name $reader $reader ./transform_cnf.sh
@@ -103,6 +105,7 @@ fi
 res=_results.csv
 err=_error.log
 if [ ! -f $res ]; then
+    rm -f $res $err
     echo system,iteration,source,extract_time,extract_variables,extract_literals,transformation,transform_time,transform_variables,transform_literals >> $res
 
     for system in ${SYSTEMS[@]}; do
@@ -117,6 +120,7 @@ if [ ! -f $res ]; then
                 for source in kconfigreader kclause hierarchy; do
                     if [ -f _models/$system,$i,$source* ]; then
                         model=_models/$system,$i,$source.model
+                        stats=_intermediate/$system,$i,hierarchy.stats
                         echo Processing $model
                         if [ -f $model ]; then
                             extract_time=$(cat $model | grep "#item time" | cut -d' ' -f3)
@@ -124,8 +128,8 @@ if [ ! -f $res ]; then
                             extract_literals=$(cat $model | sed "s/)/)\n/g" | grep "def(" | wc -l)
                         else
                             extract_time=NA
-                            extract_variables=NA
-                            extract_literals=NA
+                            extract_variables=$(cat $stats | cut -d' ' -f1)
+                            extract_literals=$(cat $stats | cut -d' ' -f2)
                         fi
                         for transformation in featureide z3 kconfigreader; do
                             if [ -f _dimacs/$system,$i,$source,$transformation* ]; then
@@ -152,5 +156,8 @@ fi
 echo
 echo Evaluation results
 echo ==================
-echo
 cat $res
+echo
+echo Errors
+echo ======
+cat $err

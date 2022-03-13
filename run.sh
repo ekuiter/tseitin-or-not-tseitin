@@ -3,9 +3,11 @@ set -e
 shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
 export N=1 # number of iterations
+export TIMEOUT=20 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
 
 # evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
+SYSTEMS=(busybox,1_35_0 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d _models ]]; then
@@ -44,7 +46,7 @@ if [[ ! -d _models ]]; then
     while [ $i -ne $N ]; do
         i=$(($i+1))
         for m in hierarchies/*.xml; do
-            echo #cp $m _models/$(basename $m .xml),$i,hierarchy.xml
+            cp $m _models/$(basename $m .xml),$i,hierarchy.xml
         done
     done
 else
@@ -84,7 +86,7 @@ if ! ls _dimacs | grep -q z3; then
         cp _transform/* stage13/$reader/transform/
         docker build -f stage13/$reader/Dockerfile -t $reader stage13
         docker rm -f $reader || true
-        docker run -m 16g -it --name $reader $reader ./transform_cnf.sh
+        docker run -m 16g -e TIMEOUT -it --name $reader $reader ./transform_cnf.sh
         docker cp $reader:/home/dimacs stage13/data_$reader
         docker rm -f $reader
         cp stage13/data_$reader/dimacs/* _dimacs/

@@ -1,5 +1,6 @@
 #!/bin/bash
 shopt -s extglob
+TIMEOUT=${TIMEOUT:999999}
 
 if [[ -d "kconfigreader" ]]; then
     READER=kconfigreader
@@ -17,13 +18,13 @@ for file in *.@(model|smt); do
     if [ $READER = kconfigreader ] && [[ $file == *.model ]]; then
         dimacs=dimacs/$(basename $file .model).dimacs
         start=`date +%s.%N`
-        /home/kconfigreader/run.sh de.fosd.typechef.kconfig.TransformCNF $(basename $file .model)
+        (timeout $TIMEOUT /home/kconfigreader/run.sh de.fosd.typechef.kconfig.TransformCNF $(basename $file .model)) || true
         end=`date +%s.%N`
         mv $(basename $file .model).dimacs $dimacs
     elif [ $READER = kclause ] && [[ $file == *.smt ]]; then
         dimacs=dimacs/$(basename $file .smt).dimacs
         start=`date +%s.%N`
-        python3 smt2dimacs.py $file > $dimacs
+        (timeout $TIMEOUT python3 smt2dimacs.py $file > $dimacs) || true
         end=`date +%s.%N`
     fi
     if [ -f $dimacs ]; then

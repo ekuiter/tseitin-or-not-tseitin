@@ -20,12 +20,13 @@ for file in *.@(model|smt); do
         /home/kconfigreader/run.sh de.fosd.typechef.kconfig.TransformCNF $(basename $file .model)
         end=`date +%s.%N`
         mv $(basename $file .model).dimacs $dimacs
-        echo "c time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $dimacs
     elif [ $READER = kclause ] && [[ $file == *.smt ]]; then
         dimacs=dimacs/$(basename $file .smt).dimacs
         start=`date +%s.%N`
         python3 smt2dimacs.py $file > $dimacs
         end=`date +%s.%N`
+    fi
+    if [ -f $dimacs ]; then
         echo "c time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $dimacs
     fi
 done

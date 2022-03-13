@@ -6,7 +6,6 @@ export N=1 # number of iterations
 
 # evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
-SYSTEMS=(axtls,release-2.0.0)
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d _models ]]; then
@@ -63,14 +62,13 @@ if [[ ! -d _transform ]] || [[ ! -d _dimacs ]]; then
     # build and run Docker image (analogous to above)
     docker build -f stage2/Dockerfile -t stage2 stage2
     docker rm -f stage2 || true
-    # todo: FeatureIDE 3.8.0 or 3.5.5?
     docker run -m 16g -it --name stage2 stage2 evaluation-cnf/transform_cnf.sh
     docker cp stage2:/home/spldev/evaluation-cnf/output stage2/data
     docker rm -f stage2
 
     # arrange files for further processing
     for file in stage2/data/*/temp/*.@(dimacs|smt|model); do
-        newfile=$(basename $file | sed 's/\.model\(.\)/\1/g' | sed 's/_0//g' | tr _ ,)
+        newfile=$(basename $file | sed 's/\.model_/,/g' | sed 's/_0//g')
         cp $file _transform/$newfile
     done
     mv _transform/*.dimacs _dimacs

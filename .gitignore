@@ -3,3 +3,10 @@
 /stage2/data
 /stage2/models*
 /_*
+*.zip
+*.gz
+*.tgz
+*.7z
+*.xz
+/stage5/bin
+/stage5/data

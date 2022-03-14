@@ -2,11 +2,17 @@
 set -e
 shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
+ANALYSES=(void dead core) # analyses to run on feature models, see run-...-analysis functions below
 export N=1 # number of iterations
 export TIMEOUT=20 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
+export RANDOM_SEED=1337 # seed for choosing core/dead features
+export NUM_FEATURES=1 # number of randomly chosen core/dead features
 
 # evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
+
+# evaluated (#)SAT solvers
+SOLVERS=(sat-2007-rsat.sh sat-2009-precosat sat-2011-glucose.sh sat-2016-minisat_static sat-2017-glucose_static sat-2018-glucose_static sat-2019-MapleLCMDistChrBt-DL-v3 sat-2020-kissat sat-2021-kissat)
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d _models ]]; then
@@ -97,11 +103,12 @@ else
 fi
 
 # stage 4: collect statistics in CSV file
-res=_results.csv
-err=_error.log
+res=_results_transform.csv
+err=_error_transform.log
 if [ ! -f $res ]; then
     rm -f $res $err
     echo system,iteration,source,extract_time,extract_variables,extract_literals,transformation,transform_time,transform_variables,transform_literals >> $res
+    touch $err
 
     for system in ${SYSTEMS[@]}; do
         system_tag=$(echo $system | tr , _)
@@ -116,7 +123,7 @@ if [ ! -f $res ]; then
                     if [ -f _models/$system,$i,$source* ]; then
                         model=_models/$system,$i,$source.model
                         stats=_intermediate/$system,$i,hierarchy.stats
-                        echo Processing $model
+                        echo "Processing $model"
                         if [ -f $model ]; then
                             extract_time=$(cat $model | grep "#item time" | cut -d' ' -f3)
                             extract_variables=$(cat $model | sed "s/)/)\n/g" | grep "def(" | sed "s/.*def(\(.*\)).*/\1/g" | sort | uniq | wc -l)
@@ -148,11 +155,62 @@ else
     echo Skipping stage 4
 fi
 
+# stage 5: analyze transformed feature models with (#)SAT solvers
+res=_results_analyze.csv
+err=_error_analyze.log
+run-solver() (
+    log=../data/$dimacs,$solver,$analysis.log
+    echo "    Running solver $solver for analysis $analysis"
+    start=`date +%s.%N`
+    (timeout $TIMEOUT ./$solver input.dimacs >> $log) || true
+    end=`date +%s.%N`
+    if ! cat $log | grep -q "s SATISFIABLE" && ! cat $log | grep -q "s UNSATISFIABLE"; then
+        echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a ../../$err
+    fi
+    echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc) >> ../../$res
+)
+run-void-analysis() (
+    cat $dimacs_path | grep -E "^[^c]" > input.dimacs
+    echo "  Void feature model"
+    run-solver
+)
+run-core-dead-analysis() (
+    features=$(cat $dimacs_path | grep -E "^c [1-9]" | cut -d' ' -f2 | shuf --random-source=<(yes $RANDOM_SEED) | head -n$NUM_FEATURES)
+    for f in $features; do
+        echo "  $1 feature $f"
+        cat $dimacs_path | grep -E "^[^c]" > input.dimacs
+        clauses=$(cat input.dimacs | grep -E ^p | cut -d' ' -f4)
+        clauses=$((clauses + 1))
+        sed -i "s/^\(p cnf [[:digit:]]\+ \)[[:digit:]]\+/\1$clauses/" input.dimacs
+        echo "$2$f 0" >> input.dimacs
+        run-solver
+    done
+)
+run-dead-analysis() (
+    run-core-dead-analysis "Dead" ""
+)
+run-core-analysis() (
+    run-core-dead-analysis "Core" "-"
+)
+if [ ! -f $res ]; then
+    rm -rf stage5/data $res $err
+    echo system,iteration,source,transformation,solver,analysis,solve_time >> $res
+    touch $err
+    mkdir -p stage5/data
+    cd stage5/bin
+    for dimacs_path in ../../_dimacs/*.dimacs; do
+        dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
+        echo "Processing $dimacs"
+        for solver in ${SOLVERS[@]}; do
+            for analysis in ${ANALYSES[@]}; do
+                run-$analysis-analysis
+            done
+        done
+    done
+    cd ../..
+else
+    echo Skipping stage 5
+fi
+
 echo
-echo Evaluation results
-echo ==================
-cat $res
-echo
-echo Errors
-echo ======
-cat $err
+cat _error*

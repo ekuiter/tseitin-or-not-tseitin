@@ -74,7 +74,7 @@ if [[ ! -d _intermediate ]] || [[ ! -d _dimacs ]]; then
             cp $file _intermediate/$newfile
         fi
     done
-    mv _intermediate/*.dimacs _dimacs
+    mv _intermediate/*.dimacs _dimacs || true
 else
     echo Skipping stage 2
 fi
@@ -90,7 +90,7 @@ if ! ls _dimacs | grep -q z3; then
         docker run -m 16g -e TIMEOUT -it --name $reader $reader ./transform_cnf.sh
         docker cp $reader:/home/dimacs stage13/data_$reader
         docker rm -f $reader
-        cp stage13/data_$reader/dimacs/* _dimacs/
+        cp stage13/data_$reader/dimacs/* _dimacs/ || true
     done
 else
     echo Skipping stage 3

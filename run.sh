@@ -12,8 +12,9 @@ export NUM_FEATURES=1 # number of randomly chosen core/dead features
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
 
 # evaluated (#)SAT solvers
+# due to license issues, we do not upload solver binaries. all binaries were compiled/downloaded from http://www.satcompetition.org, https://github.com/sat-heritage/docker-images, or the download page of the respective solver
 # todo: all winning SAT solvers? sat4j? more #SAT solvers?
-SOLVERS=(sat-2007-rsat.sh sat-2009-precosat sat-2011-glucose.sh sat-2016-minisat_static sat-2017-glucose_static sat-2018-glucose_static sat-2019-MapleLCMDistChrBt-DL-v3 sat-2020-kissat sat-2021-kissat sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-sharpSAT)
+SOLVERS=(sat02-zchaff sat03-Forklift sat04-zchaff sat05-MiniSat sat05-SatELite sat05-SatELiteGTI sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-sharpSAT)
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d _models ]]; then
@@ -106,10 +107,11 @@ fi
 # stage 4: collect statistics in CSV file
 res=_results_transform.csv
 err=_error_transform.log
+res_miss=_results_missing.csv
 if [ ! -f $res ]; then
-    rm -f $res $err
+    rm -f $res $err $res_miss
     echo system,iteration,source,extract_time,extract_variables,extract_literals,transformation,transform_time,transform_variables,transform_literals >> $res
-    touch $err
+    touch $err $res_miss
 
     for system in ${SYSTEMS[@]}; do
         system_tag=$(echo $system | tr , _)
@@ -145,6 +147,11 @@ if [ ! -f $res ]; then
                             else
                                 echo "WARNING: Missing DIMACS file for $system with source $source and transformation $transformation" | tee -a $err
                                 echo $system_tag,$i,$source,$extract_time,$extract_variables,$extract_literals,$transformation,NA,NA,NA >> $res
+                                for solver in ${SOLVERS[@]}; do
+                                    for analysis in ${ANALYSES[@]}; do
+                                        echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA >> $res_miss
+                                    done
+                                done
                             fi
                         done
                     fi
@@ -165,10 +172,12 @@ run-solver() (
     start=`date +%s.%N`
     (timeout $TIMEOUT ./$solver input.dimacs >> $log) || true
     end=`date +%s.%N`
-    if ! cat $log | grep -q "s SATISFIABLE" && ! cat $log | grep -q "s UNSATISFIABLE"; then
+    if cat $log | grep -q "SATISFIABLE" || [[ $solver == sharpsat-* ]]; then
+        echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc) >> ../../$res
+    else
         echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a ../../$err
-    fi
-    echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc) >> ../../$res
+        echo $dimacs,$solver,$analysis,NA >> ../../$res
+fi
 )
 run-void-analysis() (
     cat $dimacs_path | grep -E "^[^c]" > input.dimacs
@@ -209,6 +218,7 @@ if [ ! -f $res ]; then
         done
     done
     cd ../..
+    cat $res_miss >> $res
 else
     echo Skipping stage 5
 fi

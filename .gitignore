@@ -8,5 +8,6 @@
 *.tgz
 *.7z
 *.xz
+*.bz2
 /stage5/bin
 /stage5/data

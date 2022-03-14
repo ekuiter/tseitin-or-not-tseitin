@@ -12,7 +12,8 @@ export NUM_FEATURES=1 # number of randomly chosen core/dead features
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
 
 # evaluated (#)SAT solvers
-SOLVERS=(sat-2007-rsat.sh sat-2009-precosat sat-2011-glucose.sh sat-2016-minisat_static sat-2017-glucose_static sat-2018-glucose_static sat-2019-MapleLCMDistChrBt-DL-v3 sat-2020-kissat sat-2021-kissat)
+# todo: all winning SAT solvers? sat4j? more #SAT solvers?
+SOLVERS=(sat-2007-rsat.sh sat-2009-precosat sat-2011-glucose.sh sat-2016-minisat_static sat-2017-glucose_static sat-2018-glucose_static sat-2019-MapleLCMDistChrBt-DL-v3 sat-2020-kissat sat-2021-kissat sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-sharpSAT)
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d _models ]]; then

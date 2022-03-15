@@ -3,18 +3,19 @@ set -e
 shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
 ANALYSES=(void dead core) # analyses to run on feature models, see run-...-analysis functions below
-export N=1 # number of iterations
-export TIMEOUT=20 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
+export N=5 # number of iterations
+export TIMEOUT=300 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
 export RANDOM_SEED=1337 # seed for choosing core/dead features
-export NUM_FEATURES=1 # number of randomly chosen core/dead features
+export NUM_FEATURES=5 # number of randomly chosen core/dead features
 
 # evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
 
 # evaluated (#)SAT solvers
 # due to license issues, we do not upload solver binaries. all binaries were compiled/downloaded from http://www.satcompetition.org, https://github.com/sat-heritage/docker-images, or the download page of the respective solver
-# todo: all winning SAT solvers? sat4j? more #SAT solvers?
-SOLVERS=(sat02-zchaff sat03-Forklift sat04-zchaff sat05-MiniSat sat05-SatELite sat05-SatELiteGTI sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-sharpSAT)
+# we choose all winning SAT solvers in SAT competitions and well-known solvers in the SPL community
+# for #SAT, we choose the eight fastest solvers as evaluated by Sundermann et al. 2021, found here: https://github.com/SoftVarE-Group/emse21-evaluation-sharpsat/tree/main/solvers
+SOLVERS=(sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sat-sat4j.sh sharpsat-c2d.sh sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-miniC2D.sh sharpsat-sharpSAT)
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d _models ]]; then
@@ -170,9 +171,9 @@ run-solver() (
     log=../data/$dimacs,$solver,$analysis.log
     echo "    Running solver $solver for analysis $analysis"
     start=`date +%s.%N`
-    (timeout $TIMEOUT ./$solver input.dimacs >> $log) || true
+    (timeout $TIMEOUT ./$solver input.dimacs > $log) || true
     end=`date +%s.%N`
-    if cat $log | grep -q "SATISFIABLE" || [[ $solver == sharpsat-* ]]; then
+    if cat $log | grep -q "SATISFIABLE" || cat $log | grep -q "^s " || cat $log | grep -q "# of solutions" || cat $log | grep -q "# solutions" || cat $log | grep -q " models"; then
         echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc) >> ../../$res
     else
         echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a ../../$err

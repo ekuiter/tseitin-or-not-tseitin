@@ -3,9 +3,11 @@ set -e
 shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
 ANALYSES=(void dead core) # analyses to run on feature models, see run-...-analysis functions below
-export N=5 # number of iterations
-export TIMEOUT=300 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
-export RANDOM_SEED=1337 # seed for choosing core/dead features
+ANALYSES=(void)
+export N=3 # number of iterations
+export TIMEOUT_TRANSFORM=300 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
+export TIMEOUT_ANALYZE=60 # analysis timeout in seconds
+export RANDOM_SEED=1503221735 # seed for choosing core/dead features
 export NUM_FEATURES=5 # number of randomly chosen core/dead features
 
 # evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
@@ -96,7 +98,7 @@ if ! ls _dimacs | grep -q z3; then
         cp _intermediate/*.@(smt|model) stage13/$reader/transform/
         docker build -f stage13/$reader/Dockerfile -t $reader stage13
         docker rm -f $reader || true
-        docker run -m 16g -e TIMEOUT -it --name $reader $reader ./transform_cnf.sh
+        docker run -m 16g -e TIMEOUT_TRANSFORM -it --name $reader $reader ./transform_cnf.sh
         docker cp $reader:/home/dimacs stage13/data_$reader
         docker rm -f $reader
         cp stage13/data_$reader/dimacs/* _dimacs/ || true
@@ -171,7 +173,7 @@ run-solver() (
     log=../data/$dimacs,$solver,$analysis.log
     echo "    Running solver $solver for analysis $analysis"
     start=`date +%s.%N`
-    (timeout $TIMEOUT ./$solver input.dimacs > $log) || true
+    (timeout $TIMEOUT_ANALYZE ./$solver input.dimacs > $log) || true
     end=`date +%s.%N`
     if cat $log | grep -q "SATISFIABLE" || cat $log | grep -q "^s " || cat $log | grep -q "# of solutions" || cat $log | grep -q "# solutions" || cat $log | grep -q " models"; then
         echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc) >> ../../$res

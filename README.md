@@ -14,7 +14,7 @@ systemctl start docker
 ```
 
 Then, run the evaluation with `./run.sh`.
-To re-run the evaluation, run `rm -rf _* && ./run.sh`.
+To re-run the evaluation, run `./clean.sh && ./run.sh`.
 You can control which stages to (re-)run by prepolutating/removing files in the `_models`, `_transform`, and `_dimacs` directories.
 For an overview over the individual stages, see the source code of `run.sh`.
 

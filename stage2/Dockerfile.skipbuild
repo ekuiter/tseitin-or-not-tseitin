@@ -1,0 +1,13 @@
+FROM maven:openjdk
+
+RUN microdnf install \
+    ant \
+    git
+WORKDIR /home
+RUN mkdir spldev
+WORKDIR /home/spldev
+COPY evaluation-cnf ./evaluation-cnf
+# use a prebuild JAR in case building with the regular Dockerfile fails
+COPY evaluation-cnf-1.0-SNAPSHOT-combined.jar ./evaluation-cnf/
+COPY models.txt evaluation-cnf/config/
+COPY models evaluation-cnf/models

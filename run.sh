@@ -3,12 +3,11 @@ set -e
 shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
 ANALYSES=(void dead core) # analyses to run on feature models, see run-...-analysis functions below
-ANALYSES=(void)
-export N=3 # number of iterations
+export N=5 # number of iterations
 export TIMEOUT_TRANSFORM=300 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
-export TIMEOUT_ANALYZE=60 # analysis timeout in seconds
+export TIMEOUT_ANALYZE=300 # analysis timeout in seconds
 export RANDOM_SEED=1503221735 # seed for choosing core/dead features
-export NUM_FEATURES=5 # number of randomly chosen core/dead features
+export NUM_FEATURES=1 # number of randomly chosen core/dead features
 
 # evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)

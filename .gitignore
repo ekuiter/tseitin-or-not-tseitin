@@ -5,3 +5,6 @@
 /_*
 /stage5/bin
 /stage5/data
+/deploy.sh
+/results-*
+/.Rhistory

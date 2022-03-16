@@ -22,7 +22,6 @@ RUN git clone https://github.com/paulgazz/kmax.git \
 
 # clone the analyzed projects
 RUN git clone https://github.com/torvalds/linux linux
-RUN svn checkout svn://svn.code.sf.net/p/axtls/code/trunk axtls
 RUN git clone https://github.com/buildroot/buildroot buildroot
 RUN git clone https://github.com/mirror/busybox busybox
 RUN git clone https://github.com/ndmsystems/embtoolkit embtoolkit
@@ -30,6 +29,8 @@ RUN git clone https://github.com/kernkonzept/fiasco fiasco
 RUN git clone https://github.com/Freetz-NG/freetz-ng freetz-ng
 RUN git clone https://github.com/landley/toybox toybox
 RUN git clone https://github.com/wbx-github/uclibc-ng uclibc-ng
+COPY axtls.tar.gz .
+RUN tar -xzvf axtls.tar.gz
 
 # install dependencies of analyzed projects
 RUN apt-get update && apt-get install -y --allow-unauthenticated \

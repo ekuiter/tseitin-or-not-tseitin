@@ -152,7 +152,7 @@ if [ ! -f $res ]; then
                                 echo $system_tag,$i,$source,$extract_time,$extract_variables,$extract_literals,$transformation,NA,NA,NA >> $res
                                 for solver in ${SOLVERS[@]}; do
                                     for analysis in ${ANALYSES[@]}; do
-                                        echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA >> $res_miss
+                                        echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA,NA >> $res_miss
                                     done
                                 done
                             fi
@@ -176,10 +176,12 @@ run-solver() (
     (timeout $TIMEOUT_ANALYZE ./$solver input.dimacs > $log) || true
     end=`date +%s.%N`
     if cat $log | grep -q "SATISFIABLE" || cat $log | grep -q "^s " || cat $log | grep -q "# of solutions" || cat $log | grep -q "# solutions" || cat $log | grep -q " models"; then
-        echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc) >> ../../$res
+        model_count=$(cat $log | sed -z 's/\n# solutions \n/SHARPSAT/g' | grep -oP "((?<=Counting...)\d+(?= models)|(?<=  Counting... )\d+(?= models)|(?<=c model count\.{12}: )\d+|(?<=^s )\d+|(?<=^s mc )\d+|(?<=#SAT \(full\):   		)\d+|(?<=SHARPSAT)\d+)" || true)
+        model_count="${model_count:-NA}"
+        echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc),$model_count >> ../../$res
     else
         echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a ../../$err
-        echo $dimacs,$solver,$analysis,NA >> ../../$res
+        echo $dimacs,$solver,$analysis,NA,NA >> ../../$res
 fi
 )
 run-void-analysis() (

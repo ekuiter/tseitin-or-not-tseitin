@@ -185,13 +185,13 @@ fi
 )
 run-void-analysis() (
     cat $dimacs_path | grep -E "^[^c]" > input.dimacs
-    echo "  Void feature model"
+    echo "  Void feature model / feature model cardinality"
     run-solver
 )
 run-core-dead-analysis() (
     features=$(cat $dimacs_path | grep -E "^c [1-9]" | cut -d' ' -f2 | shuf --random-source=<(yes $RANDOM_SEED) | head -n$NUM_FEATURES)
     for f in $features; do
-        echo "  $1 feature $f"
+        echo "  $1 $f"
         cat $dimacs_path | grep -E "^[^c]" > input.dimacs
         clauses=$(cat input.dimacs | grep -E ^p | cut -d' ' -f4)
         clauses=$((clauses + 1))
@@ -201,10 +201,10 @@ run-core-dead-analysis() (
     done
 )
 run-dead-analysis() (
-    run-core-dead-analysis "Dead" ""
+    run-core-dead-analysis "Dead feature / feature cardinality" ""
 )
 run-core-analysis() (
-    run-core-dead-analysis "Core" "-"
+    run-core-dead-analysis "Core feature" "-"
 )
 if [ ! -f $res ]; then
     rm -rf stage5/data $res $err
@@ -217,7 +217,9 @@ if [ ! -f $res ]; then
         echo "Processing $dimacs"
         for solver in ${SOLVERS[@]}; do
             for analysis in ${ANALYSES[@]}; do
-                run-$analysis-analysis
+                if [[ $solver != sharpsat-* ]] || [[ $analysis != core ]]; then
+                    run-$analysis-analysis
+                fi
             done
         done
     done

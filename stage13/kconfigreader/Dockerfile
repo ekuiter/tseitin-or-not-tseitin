@@ -26,8 +26,7 @@ RUN git clone https://github.com/kernkonzept/fiasco fiasco
 RUN git clone https://github.com/Freetz-NG/freetz-ng freetz-ng
 RUN git clone https://github.com/landley/toybox toybox
 RUN git clone https://github.com/wbx-github/uclibc-ng uclibc-ng
-COPY axtls.tar.gz .
-RUN tar -xzvf axtls.tar.gz
+RUN svn checkout svn://svn.code.sf.net/p/axtls/code/tags/release-2.0.0 axtls
 
 # install dependencies of analyzed projects
 RUN apt-get update && apt-get install -y --allow-unauthenticated \

@@ -8,7 +8,7 @@ export TIMEOUT_TRANSFORM=300 # transformation timeout in seconds, should be cons
 TIMEOUT_ANALYZE=300 # analysis timeout in seconds
 RANDOM_SEED=1503221735 # seed for choosing core/dead features
 NUM_FEATURES=1 # number of randomly chosen core/dead features
-STAGE2_SKIPBUILD=y # set to y to use a prebuilt JAR for running stage 2
+SKIP_BUILD=y # whether to skip building Docker images, useful for using imported images
 
 # evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
@@ -51,7 +51,7 @@ if [[ ! -d data/models ]]; then
     while [ $i -ne $N ]; do
         i=$(($i+1))
         for m in hierarchies/*.xml; do
-            cp $m _models/$(basename $m .xml),$i,hierarchy.xml
+            cp $m data/models/$(basename $m .xml),$i,hierarchy.xml
         done
     done
 else

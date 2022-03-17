@@ -1,5 +1,5 @@
 /data
-/stage5/bin
+/stage5
 /deploy.sh
 /results-*
 /.Rhistory

@@ -162,7 +162,7 @@ fi
 res=data/results_analyze.csv
 err=data/error_analyze.log
 run-solver() (
-    log=../../data/stage5_output/$dimacs,$solver,$analysis.log
+    log=../data/stage5_output/$dimacs,$solver,$analysis.log
     echo "    Running solver $solver for analysis $analysis"
     start=`date +%s.%N`
     (timeout $TIMEOUT_ANALYZE ./$solver input.dimacs > $log) || true
@@ -170,10 +170,10 @@ run-solver() (
     if cat $log | grep -q "SATISFIABLE" || cat $log | grep -q "^s " || cat $log | grep -q "# of solutions" || cat $log | grep -q "# solutions" || cat $log | grep -q " models"; then
         model_count=$(cat $log | sed -z 's/\n# solutions \n/SHARPSAT/g' | grep -oP "((?<=Counting...)\d+(?= models)|(?<=  Counting... )\d+(?= models)|(?<=c model count\.{12}: )\d+|(?<=^s )\d+|(?<=^s mc )\d+|(?<=#SAT \(full\):   		)\d+|(?<=SHARPSAT)\d+)" || true)
         model_count="${model_count:-NA}"
-        echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc),$model_count >> ../../$res
+        echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc),$model_count >> ../$res
     else
-        echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a ../../$err
-        echo $dimacs,$solver,$analysis,NA,NA >> ../../$res
+        echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a ../$err
+        echo $dimacs,$solver,$analysis,NA,NA >> ../$res
 fi
 )
 run-void-analysis() (
@@ -204,8 +204,8 @@ if [ ! -f $res ]; then
     echo system,iteration,source,transformation,solver,analysis,solve_time >> $res
     touch $err
     mkdir -p data/stage5_output
-    cd stage5/bin
-    for dimacs_path in ../../data/dimacs/*.dimacs; do
+    cd stage5
+    for dimacs_path in ../data/dimacs/*.dimacs; do
         dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
         echo "Processing $dimacs"
         for solver in ${SOLVERS[@]}; do
@@ -216,7 +216,7 @@ if [ ! -f $res ]; then
             done
         done
     done
-    cd ../..
+    cd ..
     cat $res_miss >> $res
 else
     echo Skipping stage 5

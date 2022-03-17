@@ -10,21 +10,18 @@ else
     exit 1
 fi
 
-mkdir -p dimacs
-
-for file in *.@(model|smt); do
+for file in data/*.@(model|smt); do
     echo "Transforming $file"
     if [ $READER = kconfigreader ] && [[ $file == *.model ]]; then
-        dimacs=dimacs/$(basename $file .model).dimacs
+        dimacs=data/$(basename $file .model).dimacs
         start=`date +%s.%N`
-        (timeout $TIMEOUT_TRANSFORM /home/kconfigreader/run.sh de.fosd.typechef.kconfig.TransformCNF $(basename $file .model)) || true
+        (timeout $TIMEOUT_TRANSFORM /home/kconfigreader/run.sh de.fosd.typechef.kconfig.TransformCNF data/$(basename $file .model)) || true
         end=`date +%s.%N`
-        mv $(basename $file .model).dimacs $dimacs
         if [ -f $dimacs ]; then
             echo "c time $(echo "($end - $start) * 1000000000 / 1" | bc)" >> $dimacs
         fi
     elif [ $READER = kclause ] && [[ $file == *.smt ]]; then
-        dimacs=dimacs/$(basename $file .smt).dimacs
+        dimacs=data/$(basename $file .smt).dimacs
         start=`date +%s.%N`
         (timeout $TIMEOUT_TRANSFORM python3 smt2dimacs.py $file > $dimacs) || true
         end=`date +%s.%N`

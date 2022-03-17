@@ -1,10 +1,5 @@
-/stage13/data_*
-/stage13/*/transform
-/stage2/data
-/stage2/models*
-/_*
+/data
 /stage5/bin
-/stage5/data
 /deploy.sh
 /results-*
 /.Rhistory

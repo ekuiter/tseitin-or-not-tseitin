@@ -13,18 +13,18 @@ systemctl enable docker
 systemctl start docker
 ```
 
-Then, run the evaluation with `./run.sh`.
-To re-run the evaluation, run `./clean.sh && ./run.sh`.
-You can control which stages to (re-)run by prepolutating/removing files in the `_models`, `_transform`, and `_dimacs` directories.
+Then, run the evaluation with `sudo ./run.sh`.
+To re-run the evaluation, run `sudo ./clean.sh && sudo ./run.sh`.
+You can control which stages to (re-)run by prepolutating/removing files in the `data` directory.
 For an overview over the individual stages, see the source code of `run.sh`.
 
-The transformed DIMACS files are stored in the `_dimacs` directory, named after the following scheme:
+The transformed DIMACS files are stored in the `data/dimacs` directory, named after the following scheme:
 
 ```
 [project],[version],[iteration],[source],[transformation].dimacs
 ```
 
-The time measurements are stored in `_results_*.csv`, errors in `_error_*.log`.
+The time measurements are stored in `data/results_*.csv`, errors in `data/error_*.log`.
 
 #### Im-/Export
 

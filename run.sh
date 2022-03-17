@@ -20,38 +20,33 @@ SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embt
 SOLVERS=(sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sat-sat4j.sh sharpsat-c2d.sh sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-miniC2D.sh sharpsat-sharpSAT)
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
-if [[ ! -d _models ]]; then
+if [[ ! -d data/models ]]; then
     # clean up previous (incomplete) files
-    rm -rf stage13/data_*
-    mkdir -p _models
+    rm -rf data/kconfigreader data/kclause
+    mkdir -p data/models
 
     # extract feature models with kconfigreader and kclause
     for reader in ${READERS[@]}; do
         # build Docker image
-        docker build -f stage13/$reader/Dockerfile -t $reader stage13
+        if [[ $SKIP_BUILD != y ]]; then
+            docker build -f stage13/$reader/Dockerfile -t $reader stage13
+        fi
 
         # run evaluation script inside Docker container
         # for other evaluations, you can run other scripts (e.g., extract_all.sh)
-        docker rm -f $reader || true
-        docker run -m 16g -e N -it --name $reader $reader ./extract_cnf.sh
-
-        # copy evaluation results from Docker into host machine
-        docker cp $reader:/home/data stage13/data_$reader
-
-        # remove Docker container
-        docker rm -f $reader
+        docker run --rm -m 16g -e N -it -v $PWD/data/stage1_${reader}_output:/home/data $reader ./extract_cnf.sh
         
         # arrange files for further processing
-        for system in stage13/data_$reader/models/*; do
+        for system in data/stage1_${reader}_output/models/*; do
             system=$(basename $system)
-            for file in stage13/data_$reader/models/$system/*.model; do
-                cp stage13/data_$reader/models/$system/$(basename $file) _models/$system,$(basename $file)
+            for file in data/stage1_${reader}_output/models/$system/*.model; do
+                cp data/stage1_${reader}_output/models/$system/$(basename $file) data/models/$system,$(basename $file)
             done
         done
     done
 
     # add hierarchical models from Knüppel's "Is there a mismatch paper"
-    rm -f _models/*.xml
+    rm -f data/models/*.xml
     i=0
     while [ $i -ne $N ]; do
         i=$(($i+1))
@@ -64,58 +59,50 @@ else
 fi
 
 # stage 2: transform .model files into .dimacs (FeatureIDE), .smt (z3), and .model (kconfigreader-transform)
-if [[ ! -d _intermediate ]] || [[ ! -d _dimacs ]]; then
-    rm -rf stage2/data stage2/models*
-    mkdir -p _intermediate _dimacs
-    ls _models > stage2/models.txt
-    mkdir -p stage2/models/
-    cp _models/* stage2/models/
+if [[ ! -d data/intermediate ]] || [[ ! -d data/dimacs ]]; then
+    rm -rf data/stage2_output
+    mkdir -p data/stage2_output data/intermediate data/dimacs
+    ls data/models > data/stage2_output/models.txt
+    cp -r data/models data/stage2_output/models
 
     # build and run Docker image (analogous to above)
-    if [[ $STAGE2_SKIPBUILD == y ]]; then
-        STAGE2_SKIPBUILD=.skipbuild
-    else
-        STAGE2_SKIPBUILD=
+    if [[ $SKIP_BUILD != y ]]; then
+        docker build -f stage2/Dockerfile -t stage2 stage2
     fi
-    docker build -f stage2/Dockerfile$STAGE2_SKIPBUILD -t stage2 stage2
-    docker rm -f stage2 || true
-    docker run -m 16g -it --name stage2 stage2 evaluation-cnf/transform_cnf.sh
-    docker cp stage2:/home/spldev/evaluation-cnf/output stage2/data
-    docker rm -f stage2
+    docker run --rm -m 16g -it -v $PWD/data/stage2_output:/home/spldev/evaluation-cnf/output stage2 evaluation-cnf/transform_cnf.sh
 
     # arrange files for further processing
-    for file in stage2/data/*/temp/*.@(dimacs|smt|model|stats); do
+    for file in data/stage2_output/*/temp/*.@(dimacs|smt|model|stats); do
         newfile=$(basename $file | sed 's/\.model_/,/g' | sed 's/_0\././g' | sed 's/hierarchy_/hierarchy,/g')
         if [[ $newfile != *.stats ]] || [[ $newfile == *hierarchy* ]]; then
-            cp $file _intermediate/$newfile
+            cp $file data/intermediate/$newfile
         fi
     done
-    mv _intermediate/*.dimacs _dimacs || true
+    mv data/intermediate/*.dimacs data/dimacs || true
 else
     echo Skipping stage 2
 fi
 
 # stage 3: transform .smt and .model files into .dimacs with z3 and kconfigreader-transform
-if ! ls _dimacs | grep -q z3; then
+if ! ls data/dimacs | grep -q z3; then
     for reader in ${READERS[@]}; do
-        rm -rf stage13/$reader/transform
-        mkdir -p stage13/$reader/transform/
-        cp _intermediate/*.@(smt|model) stage13/$reader/transform/
-        docker build -f stage13/$reader/Dockerfile -t $reader stage13
-        docker rm -f $reader || true
-        docker run -m 16g -e TIMEOUT_TRANSFORM -it --name $reader $reader ./transform_cnf.sh
-        docker cp $reader:/home/dimacs stage13/data_$reader
-        docker rm -f $reader
-        cp stage13/data_$reader/dimacs/* _dimacs/ || true
+        rm -rf data/stage3_${reader}_output
+        mkdir -p data/stage3_${reader}_output
+        cp data/intermediate/*.@(smt|model) data/stage3_${reader}_output
+        if [[ $SKIP_BUILD != y ]]; then
+            docker build -f stage13/$reader/Dockerfile -t $reader stage13
+        fi
+        docker run --rm -m 16g -e TIMEOUT_TRANSFORM -it -v $PWD/data/stage3_${reader}_output:/home/data $reader ./transform_cnf.sh
+        cp data/stage3_${reader}_output/*.dimacs data/dimacs || true
     done
 else
     echo Skipping stage 3
 fi
 
 # stage 4: collect statistics in CSV file
-res=_results_transform.csv
-err=_error_transform.log
-res_miss=_results_missing.csv
+res=data/results_transform.csv
+err=data/error_transform.log
+res_miss=data/results_missing.csv
 if [ ! -f $res ]; then
     rm -f $res $err $res_miss
     echo system,iteration,source,extract_time,extract_variables,extract_literals,transformation,transform_time,transform_variables,transform_literals >> $res
@@ -123,17 +110,17 @@ if [ ! -f $res ]; then
 
     for system in ${SYSTEMS[@]}; do
         system_tag=$(echo $system | tr , _)
-        model_num=$(ls _models/$system* 2>/dev/null | wc -l)
-        if ! ([ $model_num -eq $(( 2*$N )) ] || ([ $model_num -eq $N ] && (ls _models/$system* | grep -q hierarchy))); then
+        model_num=$(ls data/models/$system* 2>/dev/null | wc -l)
+        if ! ([ $model_num -eq $(( 2*$N )) ] || ([ $model_num -eq $N ] && (ls data/models/$system* | grep -q hierarchy))); then
             echo "WARNING: Missing feature models for $system" | tee -a $err
         else
             i=0
             while [ $i -ne $N ]; do
                 i=$(($i+1))
                 for source in kconfigreader kclause hierarchy; do
-                    if [ -f _models/$system,$i,$source* ]; then
-                        model=_models/$system,$i,$source.model
-                        stats=_intermediate/$system,$i,hierarchy.stats
+                    if [ -f data/models/$system,$i,$source* ]; then
+                        model=data/models/$system,$i,$source.model
+                        stats=data/intermediate/$system,$i,hierarchy.stats
                         echo "Processing $model"
                         if [ -f $model ]; then
                             extract_time=$(cat $model | grep "#item time" | cut -d' ' -f3)
@@ -145,8 +132,8 @@ if [ ! -f $res ]; then
                             extract_literals=$(cat $stats | cut -d' ' -f2)
                         fi
                         for transformation in featureide z3 kconfigreader; do
-                            if [ -f _dimacs/$system,$i,$source,$transformation* ]; then
-                                dimacs=_dimacs/$system,$i,$source,$transformation.dimacs
+                            if [ -f data/dimacs/$system,$i,$source,$transformation* ]; then
+                                dimacs=data/dimacs/$system,$i,$source,$transformation.dimacs
                                 echo Processing $dimacs
                                 transform_time=$(cat $dimacs | grep "c time" | cut -d' ' -f3)
                                 transform_variables=$(cat $dimacs | grep -E ^p | cut -d' ' -f3)
@@ -172,10 +159,10 @@ else
 fi
 
 # stage 5: analyze transformed feature models with (#)SAT solvers
-res=_results_analyze.csv
-err=_error_analyze.log
+res=data/results_analyze.csv
+err=data/error_analyze.log
 run-solver() (
-    log=../data/$dimacs,$solver,$analysis.log
+    log=../../data/stage5_output/$dimacs,$solver,$analysis.log
     echo "    Running solver $solver for analysis $analysis"
     start=`date +%s.%N`
     (timeout $TIMEOUT_ANALYZE ./$solver input.dimacs > $log) || true
@@ -213,12 +200,12 @@ run-core-analysis() (
     run-core-dead-analysis "Core feature" "-"
 )
 if [ ! -f $res ]; then
-    rm -rf stage5/data $res $err
+    rm -rf data/stage5_output $res $err
     echo system,iteration,source,transformation,solver,analysis,solve_time >> $res
     touch $err
-    mkdir -p stage5/data
+    mkdir -p data/stage5_output
     cd stage5/bin
-    for dimacs_path in ../../_dimacs/*.dimacs; do
+    for dimacs_path in ../../data/dimacs/*.dimacs; do
         dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
         echo "Processing $dimacs"
         for solver in ${SOLVERS[@]}; do
@@ -236,4 +223,4 @@ else
 fi
 
 echo
-cat _error*
+cat data/error*

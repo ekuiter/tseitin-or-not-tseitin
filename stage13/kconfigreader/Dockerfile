@@ -42,5 +42,5 @@ RUN apt-get update && apt-get install -y --allow-unauthenticated \
 # - CNF transformer
 COPY kconfigreader/TransformCNF.scala kconfigreader/src/main/scala/
 RUN cd kconfigreader && sbt mkrun
-COPY kconfigreader/dumpconf.c *.sh kconfigreader/transform* ./
+COPY kconfigreader/dumpconf.c *.sh ./
 RUN chmod +x *.sh

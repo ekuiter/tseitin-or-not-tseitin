@@ -24,5 +24,3 @@ RUN printf "util\nevaluation\nformula\nformula-analysis\nformula-analysis-javasm
     && ./build.sh -c
 COPY evaluation-cnf ./evaluation-cnf
 RUN mvn install -f evaluation-cnf/pom.xml
-COPY models.txt evaluation-cnf/config/
-COPY models evaluation-cnf/models

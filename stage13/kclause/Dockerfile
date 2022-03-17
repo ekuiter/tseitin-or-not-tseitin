@@ -39,6 +39,5 @@ RUN apt-get update && apt-get install -y --allow-unauthenticated \
 # copy and set up
 # - kextractor (which is compiled against the projects' Kconfig implementations)
 # - IO and evaluation scripts
-# - SMTlib files for transformation into DIMACS
-COPY kclause/kextractor.c kclause/*.py *.sh kclause/transform* ./
+COPY kclause/kextractor.c kclause/*.py *.sh ./
 RUN chmod +x *.sh

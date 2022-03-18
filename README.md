@@ -4,7 +4,7 @@
 
 #### Getting Started
 
-First, [install Docker](https://docs.docker.com/get-docker/) on a Linux system (or virtual machine). On Arch Linux, for example, run:
+First, [install Docker](https://docs.docker.com/get-docker/) on a 64-bit Linux system. On Arch Linux, for example, run:
 
 ```
 usermod -aG docker $(whoami) # then, log out and in again
@@ -13,7 +13,7 @@ systemctl enable docker
 systemctl start docker
 ```
 
-Then, run the evaluation with `sudo ./run.sh`.
+Then, run the evaluation with `sudo ./run.sh` (`sudo` is recommended to avoid permission issues with files created by Docker).
 To re-run the evaluation, run `sudo ./clean.sh && sudo ./run.sh`.
 You can control which stages to (re-)run by prepolutating/removing files in the `data` directory.
 For an overview over the individual stages, see the source code of `run.sh`.

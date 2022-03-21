@@ -50,7 +50,7 @@ run-core-analysis() (
 echo system,iteration,source,transformation,solver,analysis,solve_time >> $res
 touch $err
 
-for dimacs_path in data/dimacs/axtls,unknown,1*.dimacs; do
+for dimacs_path in data/dimacs/*.dimacs; do
     dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
     echo "Processing $dimacs"
     for solver in $SOLVERS; do

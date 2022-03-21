@@ -3,7 +3,7 @@ set -e
 shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
 export ANALYSES="void dead core" # analyses to run on feature models, see run-...-analysis functions below
-export N=5 # number of iterations
+export N=1 # number of iterations
 export TIMEOUT_TRANSFORM=180 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
 export TIMEOUT_ANALYZE=180 # analysis timeout in seconds
 export RANDOM_SEED=2203212119 # seed for choosing core/dead features

@@ -4,7 +4,7 @@ shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
 ANALYSES=(void dead core) # analyses to run on feature models, see run-...-analysis functions below
 export N=5 # number of iterations
-export TIMEOUT_TRANSFORM=300 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
+export TIMEOUT_TRANSFORM=180 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
 TIMEOUT_ANALYZE=180 # analysis timeout in seconds
 RANDOM_SEED=2203180933 # seed for choosing core/dead features
 NUM_FEATURES=1 # number of randomly chosen core/dead features
@@ -17,7 +17,7 @@ SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embt
 # due to license issues, we do not upload solver binaries. all binaries were compiled/downloaded from http://www.satcompetition.org, https://github.com/sat-heritage/docker-images, or the download page of the respective solver
 # we choose all winning SAT solvers in SAT competitions and well-known solvers in the SPL community
 # for #SAT, we choose the eight fastest solvers as evaluated by Sundermann et al. 2021, found here: https://github.com/SoftVarE-Group/emse21-evaluation-sharpsat/tree/main/solvers
-SOLVERS=(sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sat-sat4j.sh sharpsat-c2d.sh sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-miniC2D.sh sharpsat-sharpSAT)
+SOLVERS=(sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sat-sat4j.sh sharpsat-c2d.sh sharpsat-cachet.sh sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-miniC2D.sh sharpsat-sharpSAT)
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d data/models ]]; then
@@ -167,14 +167,14 @@ run-solver() (
     start=`date +%s.%N`
     (timeout $TIMEOUT_ANALYZE ./$solver input.dimacs > $log) || true
     end=`date +%s.%N`
-    if cat $log | grep -q "SATISFIABLE" || cat $log | grep -q "^s " || cat $log | grep -q "# of solutions" || cat $log | grep -q "# solutions" || cat $log | grep -q " models"; then
-        model_count=$(cat $log | sed -z 's/\n# solutions \n/SHARPSAT/g' | grep -oP "((?<=Counting...)\d+(?= models)|(?<=  Counting... )\d+(?= models)|(?<=c model count\.{12}: )\d+|(?<=^s )\d+|(?<=^s mc )\d+|(?<=#SAT \(full\):   		)\d+|(?<=SHARPSAT)\d+)" || true)
+    if cat $log | grep -q "SATISFIABLE" || cat $log | grep -q "^s " || cat $log | grep -q " of solutions" || cat $log | grep -q "# solutions" || cat $log | grep -q " models"; then
+        model_count=$(cat $log | sed -z 's/\n# solutions \n/SHARPSAT/g' | grep -oP "((?<=Counting...)\d+(?= models)|(?<=  Counting... )\d+(?= models)|(?<=c model count\.{12}: )\d+|(?<=^s )\d+|(?<=^s mc )\d+|(?<=#SAT \(full\):   		)\d+|(?<=SHARPSAT)\d+|(?<=Number of solutions\t\t\t)[.e+\-\d]+)" || true)
         model_count="${model_count:-NA}"
         echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc),$model_count >> ../$res
     else
         echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a ../$err
         echo $dimacs,$solver,$analysis,NA,NA >> ../$res
-fi
+    fi
 )
 run-void-analysis() (
     cat $dimacs_path | grep -E "^[^c]" > input.dimacs

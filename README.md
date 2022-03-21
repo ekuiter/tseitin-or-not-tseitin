@@ -4,7 +4,7 @@
 
 #### Getting Started
 
-First, [install Docker](https://docs.docker.com/get-docker/) on a 64-bit Linux system. On Arch Linux, for example, run:
+First, [install Docker](https://docs.docker.com/get-docker/) on a 64-bit Linux 5.x system. On Arch Linux, for example, run:
 
 ```
 usermod -aG docker $(whoami) # then, log out and in again

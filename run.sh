@@ -2,12 +2,12 @@
 set -e
 shopt -s extglob # needed for @(...|...) syntax below
 READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
-ANALYSES=(void dead core) # analyses to run on feature models, see run-...-analysis functions below
+export ANALYSES="void dead core" # analyses to run on feature models, see run-...-analysis functions below
 export N=5 # number of iterations
 export TIMEOUT_TRANSFORM=180 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
-TIMEOUT_ANALYZE=180 # analysis timeout in seconds
-RANDOM_SEED=2203180933 # seed for choosing core/dead features
-NUM_FEATURES=1 # number of randomly chosen core/dead features
+export TIMEOUT_ANALYZE=180 # analysis timeout in seconds
+export RANDOM_SEED=2203212119 # seed for choosing core/dead features
+export NUM_FEATURES=1 # number of randomly chosen core/dead features
 SKIP_BUILD=n # whether to skip building Docker images, useful for using imported images
 
 # evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
@@ -16,8 +16,8 @@ SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embt
 # evaluated (#)SAT solvers
 # due to license issues, we do not upload solver binaries. all binaries were compiled/downloaded from http://www.satcompetition.org, https://github.com/sat-heritage/docker-images, or the download page of the respective solver
 # we choose all winning SAT solvers in SAT competitions and well-known solvers in the SPL community
-# for #SAT, we choose the eight fastest solvers as evaluated by Sundermann et al. 2021, found here: https://github.com/SoftVarE-Group/emse21-evaluation-sharpsat/tree/main/solvers
-SOLVERS=(sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sat-sat4j.sh sharpsat-c2d.sh sharpsat-cachet.sh sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-miniC2D.sh sharpsat-sharpSAT)
+# for #SAT, we choose the five fastest solvers as evaluated by Sundermann et al. 2021, found here: https://github.com/SoftVarE-Group/emse21-evaluation-sharpsat/tree/main/solvers
+export SOLVERS="sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sat-sat4j.sh sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-sharpSAT"
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d data/models ]]; then
@@ -34,7 +34,7 @@ if [[ ! -d data/models ]]; then
 
         # run evaluation script inside Docker container
         # for other evaluations, you can run other scripts (e.g., extract_all.sh)
-        docker run --rm -m 16g -e N -it -v $PWD/data/stage1_${reader}_output:/home/data $reader ./extract_cnf.sh
+        docker run --rm -m 16g -e N -v $PWD/data/stage1_${reader}_output:/home/data $reader ./extract_cnf.sh
         
         # arrange files for further processing
         for system in data/stage1_${reader}_output/models/*; do
@@ -69,7 +69,7 @@ if [[ ! -d data/intermediate ]] || [[ ! -d data/dimacs ]]; then
     if [[ $SKIP_BUILD != y ]]; then
         docker build -f stage2/Dockerfile -t stage2 stage2
     fi
-    docker run --rm -m 16g -it -v $PWD/data/stage2_output:/home/spldev/evaluation-cnf/output stage2 evaluation-cnf/transform_cnf.sh
+    docker run --rm -m 16g -v $PWD/data/stage2_output:/home/spldev/evaluation-cnf/output stage2 evaluation-cnf/transform_cnf.sh
 
     # arrange files for further processing
     for file in data/stage2_output/*/temp/*.@(dimacs|smt|model|stats); do
@@ -92,7 +92,7 @@ if ! ls data/dimacs | grep -q z3; then
         if [[ $SKIP_BUILD != y ]]; then
             docker build -f stage13/$reader/Dockerfile -t $reader stage13
         fi
-        docker run --rm -m 16g -e TIMEOUT_TRANSFORM -it -v $PWD/data/stage3_${reader}_output:/home/data $reader ./transform_cnf.sh
+        docker run --rm -m 16g -e TIMEOUT_TRANSFORM -v $PWD/data/stage3_${reader}_output:/home/data $reader ./transform_cnf.sh
         cp data/stage3_${reader}_output/*.dimacs data/dimacs || true
     done
 else
@@ -161,62 +161,16 @@ fi
 # stage 5: analyze transformed feature models with (#)SAT solvers
 res=data/results_analyze.csv
 err=data/error_analyze.log
-run-solver() (
-    log=../data/stage5_output/$dimacs,$solver,$analysis.log
-    echo "    Running solver $solver for analysis $analysis"
-    start=`date +%s.%N`
-    (timeout $TIMEOUT_ANALYZE ./$solver input.dimacs > $log) || true
-    end=`date +%s.%N`
-    if cat $log | grep -q "SATISFIABLE" || cat $log | grep -q "^s " || cat $log | grep -q " of solutions" || cat $log | grep -q "# solutions" || cat $log | grep -q " models"; then
-        model_count=$(cat $log | sed -z 's/\n# solutions \n/SHARPSAT/g' | grep -oP "((?<=Counting...)\d+(?= models)|(?<=  Counting... )\d+(?= models)|(?<=c model count\.{12}: )\d+|(?<=^s )\d+|(?<=^s mc )\d+|(?<=#SAT \(full\):   		)\d+|(?<=SHARPSAT)\d+|(?<=Number of solutions\t\t\t)[.e+\-\d]+)" || true)
-        model_count="${model_count:-NA}"
-        echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc),$model_count >> ../$res
-    else
-        echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a ../$err
-        echo $dimacs,$solver,$analysis,NA,NA >> ../$res
-    fi
-)
-run-void-analysis() (
-    cat $dimacs_path | grep -E "^[^c]" > input.dimacs
-    echo "  Void feature model / feature model cardinality"
-    run-solver
-)
-run-core-dead-analysis() (
-    features=$(cat $dimacs_path | grep -E "^c [1-9]" | cut -d' ' -f2 | shuf --random-source=<(yes $RANDOM_SEED) | head -n$NUM_FEATURES)
-    for f in $features; do
-        echo "  $1 $f"
-        cat $dimacs_path | grep -E "^[^c]" > input.dimacs
-        clauses=$(cat input.dimacs | grep -E ^p | cut -d' ' -f4)
-        clauses=$((clauses + 1))
-        sed -i "s/^\(p cnf [[:digit:]]\+ \)[[:digit:]]\+/\1$clauses/" input.dimacs
-        echo "$2$f 0" >> input.dimacs
-        run-solver
-    done
-)
-run-dead-analysis() (
-    run-core-dead-analysis "Dead feature / feature cardinality" ""
-)
-run-core-analysis() (
-    run-core-dead-analysis "Core feature" "-"
-)
 if [ ! -f $res ]; then
     rm -rf data/stage5_output $res $err
-    echo system,iteration,source,transformation,solver,analysis,solve_time >> $res
-    touch $err
     mkdir -p data/stage5_output
-    cd stage5
-    for dimacs_path in ../data/dimacs/*.dimacs; do
-        dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
-        echo "Processing $dimacs"
-        for solver in ${SOLVERS[@]}; do
-            for analysis in ${ANALYSES[@]}; do
-                if [[ $solver != sharpsat-* ]] || [[ $analysis != core ]]; then
-                    run-$analysis-analysis
-                fi
-            done
-        done
-    done
-    cd ..
+    cp -r data/dimacs data/stage5_output/dimacs
+    if [[ $SKIP_BUILD != y ]]; then
+        docker build -f stage5/Dockerfile -t stage5 stage5
+    fi
+    docker run --rm -m 16g -e ANALYSES -e TIMEOUT_ANALYZE -e RANDOM_SEED -e NUM_FEATURES -e SOLVERS -v $PWD/data/stage5_output:/home/data stage5 ./solve_cnf.sh
+    cp data/stage5_output/results_analyze.csv $res
+    cp data/stage5_output/error_analyze.log $err
     cat $res_miss >> $res
 else
     echo Skipping stage 5

@@ -47,7 +47,7 @@ run-core-analysis() (
     run-core-dead-analysis "Core feature" "-"
 )
 
-echo system,iteration,source,transformation,solver,analysis,solve_time >> $res
+echo system,iteration,source,transformation,solver,analysis,solve_time,model_count >> $res
 touch $err
 
 for dimacs_path in data/dimacs/*.dimacs; do

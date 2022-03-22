@@ -17,7 +17,7 @@ SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embt
 # due to license issues, we do not upload solver binaries. all binaries were compiled/downloaded from http://www.satcompetition.org, https://github.com/sat-heritage/docker-images, or the download page of the respective solver
 # we choose all winning SAT solvers in SAT competitions and well-known solvers in the SPL community
 # for #SAT, we choose the five fastest solvers as evaluated by Sundermann et al. 2021, found here: https://github.com/SoftVarE-Group/emse21-evaluation-sharpsat/tree/main/solvers
-export SOLVERS="sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sat-sat4j.sh sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-sharpSAT"
+export SOLVERS="sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-sharpSAT"
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d data/models ]]; then

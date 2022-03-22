@@ -14,6 +14,7 @@ systemctl start docker
 ```
 
 Then, run the evaluation with `sudo ./run.sh` (`sudo` is recommended to avoid permission issues with files created by Docker).
+On a remote machine, run `screen -dmSL evaluation ./run.sh` and press `Ctrl A, D` to detach from an SSH session (run `screen -x evaluation` to re-attach).
 To re-run the evaluation, run `sudo ./clean.sh && sudo ./run.sh`.
 You can control which stages to (re-)run by prepolutating/removing files in the `data` directory.
 For an overview over the individual stages, see the source code of `run.sh`.

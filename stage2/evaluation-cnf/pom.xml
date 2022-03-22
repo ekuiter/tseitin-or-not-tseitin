@@ -43,9 +43,9 @@
 		<dependency>
 			<groupId>de.ovgu.featureide.lib</groupId>
 			<artifactId>fm</artifactId>
-			<version>3.8.0</version>
+			<version>3.8.1</version>
 			<scope>system</scope>
-			<systemPath>${project.basedir}/libraries/de.ovgu.featureide.lib.fm-v3.8.0.jar</systemPath>
+			<systemPath>${project.basedir}/libraries/de.ovgu.featureide.lib.fm-v3.8.1.jar</systemPath>
 		</dependency>
 	</dependencies>
 </project>

@@ -125,6 +125,9 @@ svn-checkout() (
 
 run() (
     set -e
+    if [[ $2 != skip-model ]] && ! echo $KCONFIG | grep -q $1,$3; then
+        exit
+    fi
     echo | tee -a $LOG
     if ! echo $4 | grep -q c-bindings; then
         binding_path=/home/data/c-bindings/$1/$3.$BINDING

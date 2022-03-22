@@ -1,23 +1,7 @@
 #!/bin/bash
-set -e
+set -ea
 shopt -s extglob # needed for @(...|...) syntax below
-READERS=(kconfigreader kclause) # Docker containers with Kconfig extractors
-export ANALYSES="void dead core" # analyses to run on feature models, see run-...-analysis functions below
-export N=3 # number of iterations
-export TIMEOUT_TRANSFORM=180 # transformation timeout in seconds, should be consistent with stage2/evaluation-cnf/config/config.properties
-export TIMEOUT_ANALYZE=180 # analysis timeout in seconds
-export RANDOM_SEED=2203212119 # seed for choosing core/dead features
-export NUM_FEATURES=1 # number of randomly chosen core/dead features
-SKIP_BUILD=y # whether to skip building Docker images, useful for using imported images
-
-# evaluated systems and versions, should be consistent with stage1/extract_cnf.sh
-SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
-
-# evaluated (#)SAT solvers
-# due to license issues, we do not upload solver binaries. all binaries were compiled/downloaded from http://www.satcompetition.org, https://github.com/sat-heritage/docker-images, or the download page of the respective solver
-# we choose all winning SAT solvers in SAT competitions and well-known solvers in the SPL community
-# for #SAT, we choose the five fastest solvers as evaluated by Sundermann et al. 2021, found here: https://github.com/SoftVarE-Group/emse21-evaluation-sharpsat/tree/main/solvers
-export SOLVERS="sat02-zchaff sat03-Forklift sat04-zchaff sat05-SatELiteGTI.sh sat06-MiniSat sat07-RSat.sh sat09-precosat sat10-CryptoMiniSat sat11-glucose.sh sat12-glucose.sh sat13-lingeling-aqw sat14-lingeling-ayv sat16-MapleCOMSPS_DRUP sat17-Maple_LCM_Dist sat18-MapleLCMDistChronoBT sat19-MapleLCMDiscChronoBT-DL-v3 sat20-Kissat-sc2020-sat sat21-Kissat_MAB sharpsat-countAntom sharpsat-d4 sharpsat-dsharp sharpsat-ganak sharpsat-sharpSAT"
+source params.ini
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d data/models ]]; then
@@ -34,7 +18,7 @@ if [[ ! -d data/models ]]; then
 
         # run evaluation script inside Docker container
         # for other evaluations, you can run other scripts (e.g., extract_all.sh)
-        docker run --rm -m 16g -e N -v $PWD/data/stage1_${reader}_output:/home/data stage1_$reader ./extract_cnf.sh
+        docker run --rm -m 16g -e KCONFIG -e N -v $PWD/data/stage1_${reader}_output:/home/data stage1_$reader ./extract_cnf.sh
         
         # arrange files for further processing
         for system in data/stage1_${reader}_output/models/*; do
@@ -50,8 +34,8 @@ if [[ ! -d data/models ]]; then
     i=0
     while [ $i -ne $N ]; do
         i=$(($i+1))
-        for m in hierarchies/*.xml; do
-            cp $m data/models/$(basename $m .xml),$i,hierarchy.xml
+        for h in ${HIERARCHIES[@]}; do
+            cp hierarchies/$h.xml data/models/$(basename $h .xml),$i,hierarchy.xml
         done
     done
 else
@@ -69,7 +53,7 @@ if [[ ! -d data/intermediate ]] || [[ ! -d data/dimacs ]]; then
     if [[ $SKIP_BUILD != y ]]; then
         docker build -f stage2/Dockerfile -t stage2 stage2
     fi
-    docker run --rm -m 16g -v $PWD/data/stage2_output:/home/spldev/evaluation-cnf/output stage2 evaluation-cnf/transform_cnf.sh
+    docker run --rm -m 16g -e TIMEOUT_TRANSFORM -v $PWD/data/stage2_output:/home/spldev/evaluation-cnf/output stage2 evaluation-cnf/transform_cnf.sh
 
     # arrange files for further processing
     for file in data/stage2_output/*/temp/*.@(dimacs|smt|model|stats); do
@@ -108,6 +92,7 @@ if [ ! -f $res ]; then
     echo system,iteration,source,extract_time,extract_variables,extract_literals,transformation,transform_time,transform_variables,transform_literals >> $res
     touch $err $res_miss
 
+    SYSTEMS=("${KCONFIG[@]}" "${HIERARCHIES[@]}")
     for system in ${SYSTEMS[@]}; do
         system_tag=$(echo $system | tr , _)
         model_num=$(ls data/models/$system* 2>/dev/null | wc -l)

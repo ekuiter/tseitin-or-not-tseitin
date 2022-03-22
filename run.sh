@@ -10,7 +10,7 @@ export RANDOM_SEED=2203212119 # seed for choosing core/dead features
 export NUM_FEATURES=1 # number of randomly chosen core/dead features
 SKIP_BUILD=y # whether to skip building Docker images, useful for using imported images
 
-# evaluated systems and versions, should be consistent with stage13/extract_cnf.sh
+# evaluated systems and versions, should be consistent with stage1/extract_cnf.sh
 SYSTEMS=(linux,v4.18 axtls,release-2.0.0 buildroot,2021.11.2 busybox,1_35_0 embtoolkit,embtoolkit-1.8.0 fiasco,58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed freetz-ng,5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af toybox,0.8.6 uclibc-ng,v1.0.40 automotive,2_1 automotive,2_2 automotive,2_3 automotive,2_4 axtls,unknown busybox,1.18.0 ea2468,unknown embtoolkit,unknown linux,2.6.33.3 uclibc,unknown uclinux-base,unknown uclinux-distribution,unknown)
 
 # evaluated (#)SAT solvers
@@ -29,12 +29,12 @@ if [[ ! -d data/models ]]; then
     for reader in ${READERS[@]}; do
         # build Docker image
         if [[ $SKIP_BUILD != y ]]; then
-            docker build -f stage13/$reader/Dockerfile -t $reader stage13
+            docker build -f stage1/$reader/Dockerfile -t stage1_$reader stage1
         fi
 
         # run evaluation script inside Docker container
         # for other evaluations, you can run other scripts (e.g., extract_all.sh)
-        docker run --rm -m 16g -e N -v $PWD/data/stage1_${reader}_output:/home/data $reader ./extract_cnf.sh
+        docker run --rm -m 16g -e N -v $PWD/data/stage1_${reader}_output:/home/data stage1_$reader ./extract_cnf.sh
         
         # arrange files for further processing
         for system in data/stage1_${reader}_output/models/*; do
@@ -58,7 +58,7 @@ else
     echo Skipping stage 1
 fi
 
-# stage 2: transform .model files into .dimacs (FeatureIDE), .smt (z3), and .model (kconfigreader-transform)
+# stage 2a: transform .model files into .dimacs (FeatureIDE), .smt (z3), and .model (kconfigreader-transform)
 if [[ ! -d data/intermediate ]] || [[ ! -d data/dimacs ]]; then
     rm -rf data/stage2_output
     mkdir -p data/stage2_output data/intermediate data/dimacs
@@ -80,26 +80,26 @@ if [[ ! -d data/intermediate ]] || [[ ! -d data/dimacs ]]; then
     done
     mv data/intermediate/*.dimacs data/dimacs || true
 else
-    echo Skipping stage 2
+    echo Skipping stage 2a
 fi
 
-# stage 3: transform .smt and .model files into .dimacs with z3 and kconfigreader-transform
+# stage 2b: transform .smt and .model files into .dimacs with z3 and kconfigreader-transform
 if ! ls data/dimacs | grep -q z3; then
     for reader in ${READERS[@]}; do
         rm -rf data/stage3_${reader}_output
         mkdir -p data/stage3_${reader}_output
         cp data/intermediate/*.@(smt|model) data/stage3_${reader}_output
         if [[ $SKIP_BUILD != y ]]; then
-            docker build -f stage13/$reader/Dockerfile -t $reader stage13
+            docker build -f stage1/$reader/Dockerfile -t stage1_$reader stage1
         fi
-        docker run --rm -m 16g -e TIMEOUT_TRANSFORM -v $PWD/data/stage3_${reader}_output:/home/data $reader ./transform_cnf.sh
+        docker run --rm -m 16g -e TIMEOUT_TRANSFORM -v $PWD/data/stage3_${reader}_output:/home/data stage1_$reader ./transform_cnf.sh
         cp data/stage3_${reader}_output/*.dimacs data/dimacs || true
     done
 else
-    echo Skipping stage 3
+    echo Skipping stage 2b
 fi
 
-# stage 4: collect statistics in CSV file
+# stage 2c: collect statistics in CSV file
 res=data/results_transform.csv
 err=data/error_transform.log
 res_miss=data/results_missing.csv
@@ -155,25 +155,25 @@ if [ ! -f $res ]; then
         fi
     done
 else
-    echo Skipping stage 4
+    echo Skipping stage 2c
 fi
 
-# stage 5: analyze transformed feature models with (#)SAT solvers
+# stage 3: analyze transformed feature models with (#)SAT solvers
 res=data/results_analyze.csv
 err=data/error_analyze.log
 if [ ! -f $res ]; then
-    rm -rf data/stage5_output $res $err
-    mkdir -p data/stage5_output
-    cp -r data/dimacs data/stage5_output/dimacs
+    rm -rf data/stage3_output $res $err
+    mkdir -p data/stage3_output
+    cp -r data/dimacs data/stage3_output/dimacs
     if [[ $SKIP_BUILD != y ]]; then
-        docker build -f stage5/Dockerfile -t stage5 stage5
+        docker build -f stage3/Dockerfile -t stage3 stage3
     fi
-    docker run --rm -m 16g -e ANALYSES -e TIMEOUT_ANALYZE -e RANDOM_SEED -e NUM_FEATURES -e SOLVERS -v $PWD/data/stage5_output:/home/data stage5 ./solve_cnf.sh
-    cp data/stage5_output/results_analyze.csv $res
-    cp data/stage5_output/error_analyze.log $err
+    docker run --rm -m 16g -e ANALYSES -e TIMEOUT_ANALYZE -e RANDOM_SEED -e NUM_FEATURES -e SOLVERS -v $PWD/data/stage3_output:/home/data stage3 ./solve_cnf.sh
+    cp data/stage3_output/results_analyze.csv $res
+    cp data/stage3_output/error_analyze.log $err
     cat $res_miss >> $res
 else
-    echo Skipping stage 5
+    echo Skipping stage 3
 fi
 
 echo

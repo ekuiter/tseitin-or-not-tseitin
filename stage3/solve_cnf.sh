@@ -27,14 +27,14 @@ run-void-analysis() (
 )
 
 run-core-dead-analysis() (
-    features=$(cat $dimacs_path | grep -E "^c [1-9]" | cut -d' ' -f2 | shuf --random-source=<(yes $RANDOM_SEED) | head -n$NUM_FEATURES)
+    features=$(cat $base.features)
     for f in $features; do
-        echo "  $1 $f"
+        fnum=$(cat $dimacs_path | grep $f | cut -d' ' -f2 | head -n1)
         cat $dimacs_path | grep -E "^[^c]" > input.dimacs
         clauses=$(cat input.dimacs | grep -E ^p | cut -d' ' -f4)
         clauses=$((clauses + 1))
         sed -i "s/^\(p cnf [[:digit:]]\+ \)[[:digit:]]\+/\1$clauses/" input.dimacs
-        echo "$2$f 0" >> input.dimacs
+        echo "$2$fnum 0" >> input.dimacs
         run-solver
     done
 )
@@ -50,9 +50,34 @@ run-core-analysis() (
 echo system,iteration,source,transformation,solver,analysis,solve_time,model_count >> $res
 touch $err
 
+rm -rf data/dimacs/*.features
 for dimacs_path in data/dimacs/*.dimacs; do
     dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
-    echo "Processing $dimacs"
+    base=$(echo $dimacs_path | rev | cut -d, -f2- | rev)
+    echo "Reading features for $dimacs"
+    if [ ! -f $base.features ]; then
+        touch $base.features
+        features=$(cat $base,z3.dimacs | grep -E "^c [1-9]" | grep -v 'k!'| cut -d' ' -f3 | shuf --random-source=<(yes $RANDOM_SEED))
+        i=1
+        found=0
+        while [ $found -lt $NUM_FEATURES ] && [ $i -le $(echo "$features" | wc -l) ]; do
+            feature=$(echo "$features" | tail -n+$i | head -1)
+            if ([ ! -f $base,featureide.dimacs ] || (cat $base,featureide.dimacs | grep -q $feature)) &&
+               ([ ! -f $base,kconfigreader.dimacs ] || (cat $base,kconfigreader.dimacs | grep -q $feature)) &&
+               ([ ! -f $base,z3.dimacs ] || (cat $base,z3.dimacs | grep -q $feature)); then
+                echo $feature >> $base.features
+                found=$(($found+1))
+            else
+                echo "WARNING: Feature $feature not found in all DIMACS files for $base" | tee -a $err
+            fi
+            i=$(($i+1))
+        done
+    fi
+done
+for dimacs_path in data/dimacs/*.dimacs; do
+    dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
+    base=$(echo $dimacs_path | rev | cut -d, -f2- | rev)
+    echo "Solving $dimacs"
     for solver in $SOLVERS; do
         for analysis in $ANALYSES; do
             if [[ $solver != sharpsat-* ]] || [[ $analysis != core ]]; then

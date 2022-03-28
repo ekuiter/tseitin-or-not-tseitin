@@ -129,7 +129,9 @@ if [ ! -f $res ]; then
                                 echo $system_tag,$i,$source,$extract_time,$extract_variables,$extract_literals,$transformation,NA,NA,NA >> $res
                                 for solver in ${SOLVERS[@]}; do
                                     for analysis in ${ANALYSES[@]}; do
-                                        echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA,NA >> $res_miss
+                                        if [[ $solver != sharpsat-* ]] || [[ $analysis != core ]]; then
+                                            echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA,NA >> $res_miss
+                                        fi
                                     done
                                 done
                             fi

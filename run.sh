@@ -130,7 +130,15 @@ if [ ! -f $res ]; then
                                 for solver in ${SOLVERS[@]}; do
                                     for analysis in ${ANALYSES[@]}; do
                                         if [[ $solver != sharpsat-* ]] || [[ $analysis != core ]]; then
-                                            echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA,NA >> $res_miss
+                                            if [[ $analysis == void ]]; then
+                                                echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA,NA >> $res_miss
+                                            else
+                                                j=0
+                                                while [ $j -ne $NUM_FEATURES ]; do
+                                                    j=$(($j+1))
+                                                    echo $system_tag,$i,$source,$transformation,$solver,$analysis$j,NA,NA >> $res_miss
+                                                done
+                                            fi
                                         fi
                                     done
                                 done
@@ -163,5 +171,6 @@ else
     echo Skipping stage 3
 fi
 
+cp params.ini data/params.ini
 echo
 cat data/error*

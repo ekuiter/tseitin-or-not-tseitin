@@ -1,7 +1,6 @@
-/data
+/data*
 /stage3/sat*
 /stage3/sharpsat*
 /stage3/*.jar
 /deploy.sh
-/results-*
 /.Rhistory

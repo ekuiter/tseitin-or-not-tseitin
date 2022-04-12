@@ -13,21 +13,23 @@ run-solver() (
     if cat $log | grep -q "SATISFIABLE" || cat $log | grep -q "^s " || cat $log | grep -q " of solutions" || cat $log | grep -q "# solutions" || cat $log | grep -q " models"; then
         model_count=$(cat $log | sed -z 's/\n# solutions \n/SHARPSAT/g' | grep -oP "((?<=Counting...)\d+(?= models)|(?<=  Counting... )\d+(?= models)|(?<=c model count\.{12}: )\d+|(?<=^s )\d+|(?<=^s mc )\d+|(?<=#SAT \(full\):   		)\d+|(?<=SHARPSAT)\d+|(?<=Number of solutions\t\t\t)[.e+\-\d]+)" || true)
         model_count="${model_count:-NA}"
-        echo $dimacs,$solver,$analysis,$(echo "($end - $start) * 1000000000 / 1" | bc),$model_count >> $res
+        echo $dimacs,$solver,$analysis$i,$(echo "($end - $start) * 1000000000 / 1" | bc),$model_count >> $res
     else
         echo "WARNING: No solver output for $dimacs with solver $solver and analysis $analysis" | tee -a $err
-        echo $dimacs,$solver,$analysis,NA,NA >> $res
+        echo $dimacs,$solver,$analysis$i,NA,NA >> $res
     fi
 )
 
 run-void-analysis() (
     cat $dimacs_path | grep -E "^[^c]" > input.dimacs
     echo "  Void feature model / feature model cardinality"
+    i=""
     run-solver
 )
 
 run-core-dead-analysis() (
     features=$(cat $base.features)
+    i=1
     for f in $features; do
         fnum=$(cat $dimacs_path | grep $f | cut -d' ' -f2 | head -n1)
         cat $dimacs_path | grep -E "^[^c]" > input.dimacs
@@ -36,6 +38,7 @@ run-core-dead-analysis() (
         sed -i "s/^\(p cnf [[:digit:]]\+ \)[[:digit:]]\+/\1$clauses/" input.dimacs
         echo "$2$fnum 0" >> input.dimacs
         run-solver
+        i=$(($i+1))
     done
 )
 

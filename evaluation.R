@@ -2,6 +2,8 @@ library(tidyverse) # plots, CSV import
 library(ggpubr) # publication-ready plots
 library(gmp) # process big model counts correctly
 library(reshape2) # melt data
+library(rstatix)
+library(xtable)
 
 # redraw plots, prevent scientific notation, use color-blind palette
 graphics.off()
@@ -23,11 +25,12 @@ transform = aggregate(
         transform_variables, transform_literals) ~
     system + source + transformation,
   data=transform, median, na.action=na.pass)
-analyze=merge(
+analyze = merge(
   aggregate(solve_time ~ system + source + transformation + solver + analysis,
   data=analyze, median, na.action=na.pass),
   aggregate(model_count ~ system + source + transformation + solver + analysis,
     data=analyze, median, na.action=na.pass))
+
 data = merge(transform, analyze)
 
 # better labels
@@ -57,6 +60,7 @@ data$analysis_short = ifelse(
   startsWith(data$solver, "sharpsat"),
   ifelse(data$analysis_short == "Void", "FMC", "FC"),
   data$analysis_short)
+
 
 # calculate solve time and model count relative to the baseline
 is.true = function(x) { !is.na(x) & x }
@@ -95,6 +99,7 @@ fdata = function(system="", solver="", analysis="", remove_baseline = FALSE) {
 }
 foutliers = function(data, c, test) {
   data[which(test(pull(data, !!sym(c)))),] }
+
 outliers = function(data, c, test=is.na, label="") {
   outliers = merge(
     data %>% count(transformation) %>% rename(nall=n),
@@ -109,13 +114,37 @@ outliers = function(data, c, test=is.na, label="") {
   outliers$color = "black"
   return(outliers)
 }
+
 transform_data = fdata("", "", "", FALSE) %>%
   distinct(system, source, transformation, transform_time, transform_time_rel,
            transform_variables, transform_variables_rel,
            transform_literals, transform_literals_rel)
 
 # failed to relate solve time / model count to baseline for this data
-data[which(data$solve_time_fail | data$model_count_fail),]
+#data[which(data$solve_time_fail | data$model_count_fail),]
+
+write.table(data , file = "data.csv")
+write.table(transform_data , file = "transform_data.csv")
+
+sig_test = function(dataset, model) {
+	res = merge(
+		t_test(dataset, model, paired = TRUE), 
+		cohens_d(dataset, model, paired = TRUE))
+	res = select(res, c("group1","group2","p.adj","effsize"))
+	res = rename(res, T1 = group1, T2 = group2, "p-Value" = p.adj, "Effect Size" = effsize)
+	
+	m = unlist(str_split(deparse(model), " "))
+	cat(paste("---------", m[1], "---------\n"))
+	print(res)
+	cat("\n")
+	print(xtable(res, type = "latex", digits=5), file=paste(paste(m[1], m[3], sep="_"), ".tex", sep=""))
+}
+
+sig_test(transform_data, transform_time ~ transformation)
+#sig_test(transform_data, transform_variables ~ transformation)
+#sig_test(transform_data, transform_literals ~ transformation)
+sig_test(data, solve_time ~ transformation)
+#sig_test(data, model_count ~ transformation)
 
 # draw plots
 logx = function(p) { p %>% ggpar(xscale="log10") }

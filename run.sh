@@ -131,12 +131,12 @@ if [ ! -f $res ]; then
                                     for analysis in ${ANALYSES[@]}; do
                                         if [[ $solver != sharpsat-* ]] || [[ $analysis != core ]]; then
                                             if [[ $analysis == void ]]; then
-                                                echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA,NA >> $res_miss
+                                                echo $system_tag,$i,$source,$transformation,$solver,$analysis,NA,NA,NA >> $res_miss
                                             else
                                                 j=0
                                                 while [ $j -ne $NUM_FEATURES ]; do
                                                     j=$(($j+1))
-                                                    echo $system_tag,$i,$source,$transformation,$solver,$analysis$j,NA,NA >> $res_miss
+                                                    echo $system_tag,$i,$source,$transformation,$solver,$analysis$j,NA,NA,NA >> $res_miss
                                                 done
                                             fi
                                         fi

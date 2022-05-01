@@ -17,7 +17,7 @@ exclude_system = "toybox"
 
 # read CSV files
 transform = read_csv("results_transform.csv", col_type="cncnnncnnn")
-analyze = read_csv("results_analyze.csv", col_type="cnccccnc")
+analyze = read_csv("results_analyze.csv", col_type="cnccccnlc")
 
 # discard iterations by taking the median and join tables
 transform = aggregate(
@@ -26,10 +26,13 @@ transform = aggregate(
     system + source + transformation,
   data=transform, median, na.action=na.pass)
 analyze = merge(
-  aggregate(solve_time ~ system + source + transformation + solver + analysis,
-  data=analyze, median, na.action=na.pass),
+  merge(
+    aggregate(solve_time ~ system + source + transformation + solver + analysis,
+              data=analyze, median, na.action=na.pass),
+    aggregate(satisfiable ~ system + source + transformation + solver + analysis,
+              data=analyze, median, na.action=na.pass)),
   aggregate(model_count ~ system + source + transformation + solver + analysis,
-    data=analyze, median, na.action=na.pass))
+            data=analyze, median, na.action=na.pass))
 data = merge(transform, analyze)
 
 # better labels
@@ -141,28 +144,38 @@ time_data = union_all(
 # failed to relate solve time / model count to baseline for this data
 data[which(data$solve_time_fail | data$model_count_fail),]
 
+# failed to determine satisfiability
+data[which(!is.na(data$solve_time) & is.na(data$model_count) & is.na(data$satisfiable)),]
+
+# satisfiability does not match for this data
+data %>%
+  group_by(system, source, solver, analysis) %>%
+  mutate(satisfiability_rel=satisfiable == satisfiable[transformation == baseline]) %>%
+  ungroup() %>%
+  filter(satisfiability_rel==FALSE)
+
 write.table(data , file = "data.csv")
 write.table(transform_data , file = "transform_data.csv")
 
-# sig_test = function(dataset, model) {
-# 	res = merge(
-# 		t_test(dataset, model, paired = TRUE), 
-# 		cohens_d(dataset, model, paired = TRUE))
-# 	res = select(res, c("group1","group2","p.adj","effsize"))
-# 	res = rename(res, T1 = group1, T2 = group2, "p-Value" = p.adj, "Effect Size" = effsize)
-# 	
-# 	m = unlist(str_split(deparse(model), " "))
-# 	cat(paste("---------", m[1], "---------\n"))
-# 	print(res)
-# 	cat("\n")
-# 	print(xtable(res, type = "latex", digits=5), file=paste(paste(m[1], m[3], sep="_"), ".tex", sep=""))
-# }
-# 
-# sig_test(transform_data, transform_time ~ transformation)
-# #sig_test(transform_data, transform_variables ~ transformation)
-# #sig_test(transform_data, transform_literals ~ transformation)
-# sig_test(data, solve_time ~ transformation)
-# #sig_test(data, model_count ~ transformation)
+sig_test = function(dataset, model) {
+	res = merge(
+		t_test(dataset, model, paired = TRUE),
+		cohens_d(dataset, model, paired = TRUE))
+	res = select(res, c("group1","group2","p.adj","effsize"))
+	res = rename(res, T1 = group1, T2 = group2, "p-Value" = p.adj, "Effect Size" = effsize)
+
+	m = unlist(str_split(deparse(model), " "))
+	cat(paste("---------", m[1], "---------\n"))
+	print(res)
+	cat("\n")
+	print(xtable(res, type = "latex", digits=5), file=paste(paste(m[1], m[3], sep="_"), ".tex", sep=""))
+}
+
+sig_test(transform_data, transform_time ~ transformation)
+#sig_test(transform_data, transform_variables ~ transformation)
+#sig_test(transform_data, transform_literals ~ transformation)
+sig_test(data, solve_time ~ transformation)
+#sig_test(data, model_count ~ transformation)
 
 # draw plots
 logx = function(p) { p %>% ggpar(xscale="log10") }

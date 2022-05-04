@@ -143,6 +143,8 @@ data[which(data$solve_time_fail | data$model_count_fail),]
 
 # failed to determine satisfiability
 data[which(!is.na(data$solve_time) & is.na(data$model_count) & is.na(data$satisfiable)),]
+fdata("", "sharpsat") %>% nrow()
+fdata("", "sharpsat") %>% filter(!is.na(transform_time) & is.na(solve_time)) %>% nrow()
 
 # satisfiability does not match for this data
 data %>%
@@ -150,6 +152,25 @@ data %>%
   mutate(satisfiability_equal=satisfiable == satisfiable[transformation == baseline]) %>%
   ungroup() %>%
   filter(satisfiability_equal==FALSE)
+
+# median of transformation runtimess
+merge(data, data %>% filter(transformation=="FeatureIDE" & !is.na(transform_time)) %>%
+        select(system, source) %>% distinct()) %>%
+  group_by(transformation) %>%
+  summarise(median=median(transform_time, na.rm=TRUE))
+
+# quartiles of solver runtimes
+fdata("", "sat") %>% group_by(transformation) %>%
+  summarise(median=median(solve_time_rel, na.rm=TRUE),
+            iqr=IQR(solve_time_rel, na.rm=TRUE),
+            q1=quantile(solve_time_rel, na.rm=TRUE)[1]-1,
+            q2=quantile(solve_time_rel, na.rm=TRUE)[2]-1,
+            q4=quantile(solve_time_rel, na.rm=TRUE)[4]-1,
+            q5=quantile(solve_time_rel, na.rm=TRUE)[5]-1)
+
+# Z3 fastest
+fast = function(t) {(merge(data, fdata("", "") %>% group_by(system, source, solver, analysis) %>% summarise(min=min(solve_time, na.rm=TRUE), .groups="keep") %>% ungroup()) %>% filter(transformation==t&min==solve_time) %>% nrow()) / (merge(data, fdata("", "") %>% group_by(system, source, solver, analysis) %>% summarise(min=min(solve_time, na.rm=TRUE), .groups="keep") %>% ungroup()) %>% filter(transformation==t&!is.infinite(min)) %>% nrow())}
+fast("Z3") + fast("FeatureIDE") + fast("KConfigReader")
 
 # serialize data
 dir.create("results", showWarnings=FALSE)

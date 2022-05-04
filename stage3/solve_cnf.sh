@@ -32,7 +32,7 @@ run-core-dead-analysis() (
     features=$(cat $base.features)
     i=1
     for f in $features; do
-        fnum=$(cat $dimacs_path | grep $f | cut -d' ' -f2 | head -n1)
+        fnum=$(cat $dimacs_path | grep " $f$" | cut -d' ' -f2 | head -n1)
         cat $dimacs_path | grep -E "^[^c]" > input.dimacs
         clauses=$(cat input.dimacs | grep -E ^p | cut -d' ' -f4)
         clauses=$((clauses + 1))
@@ -64,14 +64,14 @@ for dimacs_path in data/dimacs/*.dimacs; do
     echo "Reading features for $dimacs"
     if [ ! -f $base.features ]; then
         touch $base.features
-        features=$(cat $base_it,z3.dimacs | grep -E "^c [1-9]" | grep -v 'k!'| cut -d' ' -f3 | shuf --random-source=<(yes $RANDOM_SEED))
+        features=$(cat $base_it,z3.dimacs | grep -E "^c [1-9]" | grep -v 'k!' | cut -d' ' -f3 | shuf --random-source=<(yes $RANDOM_SEED))
         i=1
         found=0
         while [ $found -lt $NUM_FEATURES ] && [ $i -le $(echo "$features" | wc -l) ]; do
             feature=$(echo "$features" | tail -n+$i | head -1)
-            if ([ ! -f $base_it,featureide.dimacs ] || (cat $base_it,featureide.dimacs | grep -q $feature)) &&
-               ([ ! -f $base_it,kconfigreader.dimacs ] || (cat $base_it,kconfigreader.dimacs | grep -q $feature)) &&
-               ([ ! -f $base_it,z3.dimacs ] || (cat $base_it,z3.dimacs | grep -q $feature)); then
+            if ([ ! -f $base_it,featureide.dimacs ] || (cat $base_it,featureide.dimacs | grep -q " $feature$")) &&
+               ([ ! -f $base_it,kconfigreader.dimacs ] || (cat $base_it,kconfigreader.dimacs | grep -q " $feature$")) &&
+               ([ ! -f $base_it,z3.dimacs ] || (cat $base_it,z3.dimacs | grep -q " $feature$")); then
                 echo $feature >> $base.features
                 found=$(($found+1))
             else

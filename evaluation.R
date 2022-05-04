@@ -147,9 +147,9 @@ data[which(!is.na(data$solve_time) & is.na(data$model_count) & is.na(data$satisf
 # satisfiability does not match for this data
 data %>%
   group_by(system, source, solver, analysis) %>%
-  mutate(satisfiability_rel=satisfiable == satisfiable[transformation == baseline]) %>%
+  mutate(satisfiability_equal=satisfiable == satisfiable[transformation == baseline]) %>%
   ungroup() %>%
-  filter(satisfiability_rel==FALSE)
+  filter(satisfiability_equal==FALSE)
 
 # serialize data
 dir.create("results", showWarnings=FALSE)

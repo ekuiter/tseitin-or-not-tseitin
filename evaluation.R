@@ -14,10 +14,13 @@ palette = c("#000000", "#E69F00", "#56B4E9", "#009E73",
 # parameters
 baseline = "Z3"
 exclude_system = "toybox"
+read_satisfiable = TRUE
 
 # read CSV files
 transform = read_csv("results_transform.csv", col_type="cncnnncnnn")
-analyze = read_csv("results_analyze.csv", col_type="cnccccnlc")
+analyze = read_csv("results_analyze.csv",
+                   col_type=if(read_satisfiable) "cnccccnlc" else "cnccccnc")
+if (!read_satisfiable) analyze$satisfiable = TRUE
 
 # discard iterations by taking the median and join tables
 transform = aggregate(
@@ -48,10 +51,6 @@ data = data %>%
 # add columns
 capitalize = function(c) {
   gsub("([\\w])([\\w]+)", "\\U\\1\\L\\2", c, perl=TRUE) }
-#data$new_variables = data$transform_variables - data$extract_variables
-#data$new_literals = data$transform_literals - data$extract_literals
-#data$new_variables_rel = data$transform_variables / data$extract_variables
-#data$new_literals_rel = data$transform_literals / data$extract_literals
 data$system_long = paste(data$system, data$source)
 data$system_short = str_split(data$system, "_") %>% map(1) %>% flatten_chr()
 data$solver_short = str_split(data$solver, "-") %>% map(2) %>% flatten_chr()
@@ -114,7 +113,6 @@ outliers = function(data, c, test=is.na, label="") {
     sprintf("%s/%s (%s) %s", outliers$nall-outliers$nfail, outliers$nall,
             scales::percent((outliers$nall-outliers$nfail)/outliers$nall),
             label)
-  #outliers$color = ifelse(outliers$nfail == 0, "black", "red")
   outliers$color = "black"
   return(outliers)
 }
@@ -126,7 +124,6 @@ outliers_2dim = function(data, c, test=is.na, label="") {
   outliers[is.na(outliers)] = 0
   outliers$label = scales::percent(
     (outliers$nall-outliers$nfail)/outliers$nall, accuracy=0.1)
-  #outliers$color = ifelse(outliers$nfail == 0, "black", "red")
   outliers$color = "black"
   return(outliers)
 }
@@ -154,28 +151,24 @@ data %>%
   ungroup() %>%
   filter(satisfiability_rel==FALSE)
 
-write.table(data , file = "data.csv")
-write.table(transform_data , file = "transform_data.csv")
+# serialize data
+dir.create("results", showWarnings=FALSE)
+write.table(data, file = "results/data.csv")
+write.table(transform_data, file = "results/transform_data.csv")
 
+# perform significance tests
 sig_test = function(dataset, model) {
 	res = merge(
 		t_test(dataset, model, paired = TRUE),
 		cohens_d(dataset, model, paired = TRUE))
 	res = select(res, c("group1","group2","p.adj","effsize"))
 	res = rename(res, T1 = group1, T2 = group2, "p-Value" = p.adj, "Effect Size" = effsize)
-
 	m = unlist(str_split(deparse(model), " "))
-	cat(paste("---------", m[1], "---------\n"))
+	cat(sprintf("%s ~ %s\n", m[1], m[3]))
 	print(res)
 	cat("\n")
-	print(xtable(res, type = "latex", digits=5), file=paste(paste(m[1], m[3], sep="_"), ".tex", sep=""))
+	print(xtable(res, type = "latex", digits=-2), file=sprintf("results/%s_%s.tex", m[1], m[3]))
 }
-
-sig_test(transform_data, transform_time ~ transformation)
-#sig_test(transform_data, transform_variables ~ transformation)
-#sig_test(transform_data, transform_literals ~ transformation)
-sig_test(data, solve_time ~ transformation)
-#sig_test(data, model_count ~ transformation)
 
 # draw plots
 logx = function(p) { p %>% ggpar(xscale="log10") }
@@ -185,7 +178,7 @@ laby = function(p, l) { p %>% ggpar(ylab=l) }
 plot = function(p, export=NA) { 
   p = p %>% ggpar(palette=palette)
   if (!is.na(export))
-    p %>% ggexport(filename=sprintf("%s.pdf", export), width=7, height=4)
+    p %>% ggexport(filename=sprintf("results/%s.pdf", export), width=7, height=4)
   p %>% print()
 }
 relative = function(p, y=1) { p %>%
@@ -195,7 +188,7 @@ label = function(p, data, x, offset) { p %>%
                   aes(x=!!sym(x), y=offset, label=label))) }
 add = ggplot2:::add_ggplot
 
-# RQ1: transformation time
+# transformation time
 if (0) melt(transform_data %>%
               rename("Transform Time"=transform_time_rel) %>%
               rename("#Variables"=transform_variables_rel) %>%
@@ -209,9 +202,9 @@ if (0) melt(transform_data %>%
   labx("CNF Transformation Tool") %>%
   laby("Transform Time / Formula Size (log10, rel. to Z3)") %>%
   add(labs(color="")) %>%
-  plot("rq1")
+  plot()
 
-# RQ2: solve time
+# solve time
 if (0) for (s in c("sat", "sharpsat")) fdata("", s) %>%
   ggboxplot(x="transformation", y="solve_time_rel", color="analysis_short", outlier.shape=20, na.rm=TRUE) %>%
   relative() %>%
@@ -220,38 +213,7 @@ if (0) for (s in c("sat", "sharpsat")) fdata("", s) %>%
   labx("CNF Transformation Tool") %>%
   laby("Solve Time (log10, rel. to Z3)") %>%
   add(labs(color="Analysis")) %>%
-  plot(sprintf("rq2-%s", s))
-
-# RQ1 and RQ2 combined
-if(1) time_data %>%
-  ggboxplot(x="analysis_short", y="time", color="transformation", outlier.shape=20, na.rm=TRUE,
-            order=c("Transformation", "Void", "Core/Dead", "FMC", "FC")) %>%
-  relative() %>%
-  #label(outliers_2dim(time_data, "time"), "analysis_short", 0.2) %>%
-  add(geom_text(data=outliers_2dim(time_data, "time"), fontface="italic",
-                aes(x=analysis_short, y=0.05, color=transformation, label=label, angle=30),
-                position=position_dodge(width=0.8), size=3.5, vjust=-1)) %>%
-  logy() %>%
-  labx("Algorithm") %>%
-  laby("Algorithm Runtime (log10, rel. to Z3)") %>%
-  add(labs(color="CNF Transformation Tool")) %>%
-  plot("rq12")
-
-# RQ2: solve time by size (omit timeouts, which are already shown above)
-if (1) for (s in c("sat", "sharpsat")) fdata("", s, "", TRUE) %>%
-  ggboxplot(x="extract_literals", y="solve_time_rel", color="transformation", outlier.shape=20, na.rm=TRUE) %>%
-  add(geom_boxplot(data=fdata("", s, "", TRUE) %>% filter(is.na(solve_time_rel)) %>% mutate(solve_time_rel=25),
-                   aes(x=as.factor(extract_literals), y=solve_time_rel, color=transformation), na.rm=TRUE)) %>%
-  relative() %>%
-  relative(y=25) %>%
-  add(scale_x_discrete(labels = \(x) formatter(as.numeric(x)))) %>%
-  #add(geom_text(aes(label=sprintf("%s (%s)", system_short, substr(source, 0, 3)), y=if (s == "sat") 25 else 300, angle=90, hjust="inward"), size=3)) %>%
-  logy() %>%
-  labx("Feature Model Size (#Literals)") %>%
-  laby("Solve Time (log10, rel. to Z3)") %>%
-  add(labs(color="Transformation")) %>%
-  add(rotate_x_text()) %>%
-  plot(sprintf("rq2a-%s", s))
+  plot()
 
 if(0) fdata("", "sat", "", TRUE) %>%
   ggscatter(x="extract_literals", y="solve_time_rel", color="transformation", na.rm=TRUE) %>%
@@ -261,9 +223,9 @@ if(0) fdata("", "sat", "", TRUE) %>%
   labx("Feature Model Size (log10, #Literals)") %>%
   laby("Solve Time (log10, rel. to Z3)") %>%
   add(labs(color="Transformation")) %>%
-  plot("rq2a")
+  plot()
 
-# RQ3: model count correctness
+# model count correctness
 if (0) fdata("", "sharpsat") %>%
   filter(model_count_rel < 1e+8) %>%
   arrange(transformation) %>%
@@ -274,7 +236,7 @@ if (0) fdata("", "sharpsat") %>%
   labx("CNF Transformation Tool") %>%
   laby("Model Count (log10, rel. to Z3)") %>%
   add(labs(color="Analysis")) %>%
-  plot("rq3")
+  plot()
 
 # solve time by system
 if (0) for (s in c("sat", "sharpsat")) fdata("", s, "void") %>%
@@ -290,5 +252,34 @@ if (0) for (solver in c("sat")) fdata("", solver, "", FALSE) %>%
   facet(facet.by = "solver") %>%
   plot()
 
-# quantile((fdata("", "sat") %>% filter(transformation=="KConfigReader"))$solve_time_rel, na.rm=TRUE)
-# fdata("", "sat") %>% filter(transformation=="Z3") %>% filter(is.na(solve_time) &!is.na(transform_time))
+# RQ1 and RQ2
+time_data %>%
+  ggboxplot(x="analysis_short", y="time", color="transformation", outlier.shape=20, na.rm=TRUE,
+            order=c("Transformation", "Void", "Core/Dead", "FMC", "FC")) %>%
+  relative() %>%
+  add(geom_text(data=outliers_2dim(time_data, "time"), fontface="italic",
+                aes(x=analysis_short, y=0.05, color=transformation, label=label, angle=30),
+                position=position_dodge(width=0.8), size=3.5, vjust=-1)) %>%
+  logy() %>%
+  labx("Algorithm") %>%
+  laby("Algorithm Runtime (log10, rel. to Z3)") %>%
+  add(labs(color="CNF Transformation Tool")) %>%
+  plot("rq12")
+
+# RQ2: solve time by size
+for (s in c("sat", "sharpsat")) fdata("", s, "", TRUE) %>%
+  ggboxplot(x="extract_literals", y="solve_time_rel", color="transformation", outlier.shape=20, na.rm=TRUE) %>%
+  add(geom_boxplot(data=fdata("", s, "", TRUE) %>% filter(is.na(solve_time_rel)) %>% mutate(solve_time_rel=25),
+                   aes(x=as.factor(extract_literals), y=solve_time_rel, color=transformation), na.rm=TRUE)) %>%
+  relative() %>%
+  relative(y=25) %>%
+  add(scale_x_discrete(labels = \(x) formatter(as.numeric(x)))) %>%
+  logy() %>%
+  labx("Feature Model Size (#Literals)") %>%
+  laby("Solve Time (log10, rel. to Z3)") %>%
+  add(labs(color="Transformation")) %>%
+  add(rotate_x_text()) %>%
+  plot(sprintf("rq2-%s", s))
+
+sig_test(transform_data, transform_time ~ transformation)
+sig_test(data, solve_time ~ transformation)

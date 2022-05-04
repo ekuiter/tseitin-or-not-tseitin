@@ -4,7 +4,8 @@ RUN apt-get update && apt-get install -y --allow-unauthenticated \
     default-jre \
     libgmpxx4ldbl \
     lib32z1 \
-    bc
+    bc \
+    dos2unix
 WORKDIR /home
 COPY solve_cnf.sh sat* sharpsat* *.jar ./
-RUN chmod +x *.sh
+RUN chmod +x *.sh && dos2unix *.sh

@@ -146,14 +146,20 @@ data[which(!is.na(data$solve_time) & is.na(data$model_count) & is.na(data$satisf
 fdata("", "sharpsat") %>% nrow()
 fdata("", "sharpsat") %>% filter(!is.na(transform_time) & is.na(solve_time)) %>% nrow()
 
-# satisfiability does not match for this data
+# satisfiability/model count does not match for this data
 data %>%
   group_by(system, source, solver, analysis) %>%
   mutate(satisfiability_equal=satisfiable == satisfiable[transformation == baseline]) %>%
   ungroup() %>%
   filter(satisfiability_equal==FALSE)
+data %>%
+       group_by(system, source, solver, analysis) %>%
+       mutate(mce=model_count == model_count[transformation == baseline]) %>%
+       mutate(mc=paste(model_count, model_count[transformation == baseline])) %>%
+       ungroup() %>%
+       filter(mce==FALSE)
 
-# median of transformation runtimess
+# median of transformation runtimes
 merge(data, data %>% filter(transformation=="FeatureIDE" & !is.na(transform_time)) %>%
         select(system, source) %>% distinct()) %>%
   group_by(transformation) %>%

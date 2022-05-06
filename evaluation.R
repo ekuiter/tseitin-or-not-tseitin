@@ -14,7 +14,7 @@ palette = c("#000000", "#E69F00", "#56B4E9", "#009E73",
 # parameters
 baseline = "Z3"
 exclude_system = "toybox"
-read_satisfiable = TRUE
+read_satisfiable = FALSE
 
 # read CSV files
 transform = read_csv("results_transform.csv", col_type="cncnnncnnn")
@@ -84,9 +84,14 @@ data = data %>%
            !is.na(solve_time)) %>%
   mutate(model_count_rel=
            `if`(is.true(as.bigz(model_count[transformation == baseline]) > 0),
-             as.numeric(as.bigz(model_count)/
-                          as.bigz(model_count[transformation == baseline])),
-             NA)) %>%
+                as.numeric(as.bigz(model_count)/
+                             as.bigz(model_count[transformation == baseline])),
+                NA)) %>%
+  mutate(model_count_1=
+           `if`(is.true(as.bigz(model_count[transformation == baseline]) > 0),
+                as.character(as.bigz(model_count)/
+                             as.bigz(model_count[transformation == baseline])),
+                NA)) %>%
   mutate(model_count_fail=
            !is.true(as.bigz(model_count[transformation == baseline]) > 0) &&
            is.true(as.bigz(model_count) > 0)) %>%
@@ -158,6 +163,11 @@ data %>%
        mutate(mc=paste(model_count, model_count[transformation == baseline])) %>%
        ungroup() %>%
        filter(mce==FALSE)
+data %>% filter(!is.na(transform_time) & startsWith(solver,"sharp") & is.na(solve_time))
+data %>% filter(!is.na(transform_time) & startsWith(solver,"sharp") & !is.na(solve_time)) %>%
+    group_by(system, source, solver, analysis) %>%
+    mutate(mce=if(length(model_count[transformation == baseline])==0) TRUE else model_count == model_count[transformation == baseline]) %>% filter(transformation == "KConfigReader" & analysis_short == "FMC") %>% filter(mce==FALSE) %>% nrow()
+data %>% filter(transformation == "KConfigReader" & (model_count_1) != "NA" & model_count_rel > 1 & analysis_short == "FC") %>% select(system,source,solver,analysis,model_count_rel,model_count_1) %>% summarize(min=min(model_count_rel),max=max(model_count_rel),median=median(model_count_rel))
 
 # median of transformation runtimes
 merge(data, data %>% filter(transformation=="FeatureIDE" & !is.na(transform_time)) %>%

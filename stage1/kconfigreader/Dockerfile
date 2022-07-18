@@ -1,14 +1,13 @@
 FROM ubuntu:14.04
 
 # install (tested) dependencies of kconfigreader and evaluation scripts
-RUN echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
-RUN echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt_old.list
 RUN apt-get update && apt-get install -y --allow-unauthenticated \
   git \
   subversion \
   openjdk-7-jdk \
-  sbt=0.13.6 \
   wget
+COPY kconfigreader/sbt-0.13.6.deb .
+RUN dpkg -i sbt-0.13.6.deb
 
 # install (the tested version of) kconfigreader
 WORKDIR /home

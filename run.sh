@@ -156,7 +156,7 @@ fi
 # stage 3: analyze transformed feature models with (#)SAT solvers
 res=data/results_analyze.csv
 err=data/error_analyze.log
-if [ ! -f $res ]; then
+if [ ! -f $res ] && [[ $SKIP_ANALYSIS != y ]]; then
     rm -rf data/stage3_output $res $err
     mkdir -p data/stage3_output
     cp -r data/dimacs data/stage3_output/dimacs

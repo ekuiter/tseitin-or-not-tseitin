@@ -29,7 +29,7 @@ The time measurements are stored in `data/results_*.csv`, errors in `data/error_
 
 #### Im-/Export
 
-To im-/export preconfigured Docker containers (download available [here](https://github.com/ekuiter/comparing-cnf-transformations/releases)), run `./import.sh` and `./export.sh`, respectively.
+To im-/export preconfigured Docker containers (download available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg)), run `./import.sh` and `./export.sh`, respectively.
 (This ensures the reproduceability of our results even when the Docker files fail to build from scratch.)
 
 #### Debugging

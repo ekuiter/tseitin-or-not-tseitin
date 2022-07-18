@@ -49,3 +49,7 @@ To start an interactive session in a (not already running) Docker container:
 ```
 docker run -it $reader /bin/bash
 ```
+
+### Evaluation results
+
+The results of the evaluation for our ASE'22 submission are available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg).

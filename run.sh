@@ -2,6 +2,7 @@
 set -ea
 shopt -s extglob # needed for @(...|...) syntax below
 source params.ini
+mkdir -p data
 
 # stage 1: extract feature models as .model files with kconfigreader-extract and kclause
 if [[ ! -d data/models ]]; then

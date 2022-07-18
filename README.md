@@ -21,6 +21,7 @@ To re-run the evaluation, run `sudo ./clean.sh && sudo ./run.sh`.
 You can control which stages to (re-)run by prepolutating/removing files in the `data` directory.
 For an overview over the individual stages, see the source code of `run.sh`.
 To mimic the behaviour of the [feature-model-repository-pipeline](https://github.com/ekuiter/feature-model-repository-pipeline), set `SKIP_ANALYSIS=y` in `params.ini`.
+By default, we ship a `params.ini` for extracting and transforming feature models and a `params-ase22.ini` for replicating the evaluation for our ASE'22 submission.
 
 The transformed DIMACS files are stored in the `data/dimacs` directory, named after the following scheme:
 

@@ -1,5 +1,7 @@
 ## Comparing CNF Transformations for Feature-Model Analysis
 
+This repository provides Docker automation for investigating transformations of feature-model formulas into conjunctive normal form (CNF) and evaluating the influence of CNF transformations on subsequent feature-model analyses using SAT and #SAT solvers.
+
 ### Replication Package
 
 #### Getting Started
@@ -18,6 +20,7 @@ On a remote machine, run `screen -dmSL evaluation sudo ./run.sh` and press `Ctrl
 To re-run the evaluation, run `sudo ./clean.sh && sudo ./run.sh`.
 You can control which stages to (re-)run by prepolutating/removing files in the `data` directory.
 For an overview over the individual stages, see the source code of `run.sh`.
+To mimic the behaviour of the [feature-model-repository-pipeline](https://github.com/ekuiter/feature-model-repository-pipeline), set `SKIP_ANALYSIS=y` in `params.ini`.
 
 The transformed DIMACS files are stored in the `data/dimacs` directory, named after the following scheme:
 

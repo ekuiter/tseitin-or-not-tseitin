@@ -67,4 +67,4 @@ docker run -it $reader /bin/bash
 
 ### Evaluation results
 
-The results of the evaluation for our ASE'22 submission are available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg).
+The results of the evaluation for our ASE'22 paper are available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg).

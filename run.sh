@@ -13,6 +13,9 @@ if [[ ! -f input/extract.sh ]]; then
 fi
 
 mkdir -p output
+
+# clone repositories
+chmod +x input/extract.sh
 source input/params.ini
 source input/extract.sh
 

@@ -13,7 +13,7 @@ To support the first two use cases, we ship `params_ase22.ini` for replicating t
 
 Regardless of the use case, these steps should be followed to set up the automation correctly.
 
-* First, install [Docker](https://docs.docker.com/get-docker/) and other dependencies on a 64-bit Linux 5.x system or [WSL 2](https://docs.microsoft.com/de-de/windows/wsl/install).
+* First, install [Docker](https://docs.docker.com/get-docker/) and some other dependencies on a 64-bit Linux 5.x system or [WSL 2](https://docs.microsoft.com/de-de/windows/wsl/install).
     On Arch Linux, for example, run:
     ```
     usermod -aG docker $(whoami) # then, log out and in again
@@ -31,42 +31,47 @@ Regardless of the use case, these steps should be followed to set up the automat
     cp input/params_ase22.ini input/params.ini
     cp input/extract_ase22.sh input/extract.sh
     ```
-    For the feature model repository, run:
+    For creating a feature model repository, run:
     ```
     cp input/params_repo.ini input/params.ini
     cp input/extract_repo.sh input/extract.sh
     ```
-* Finally, run the evaluation with `./run.sh`.
-* On a remote machine, run `screen -dmSL evaluation ./run.sh` and press `Ctrl A, D` to detach from an SSH session (run `screen -x evaluation` to re-attach and `sudo killall containerd dockerd kclause python3 java bash` to stop).
-* To re-run the evaluation, run `./clean.sh && ./run.sh`.
+* Finally, run the script with `./run.sh`.
+* On a remote machine, run `screen -dmSL tseitin ./run.sh` and press `Ctrl A, D` to detach from an SSH session (run `screen -x tseitin` to re-attach and `sudo killall containerd dockerd kclause python3 java bash` to stop).
+* To re-run the script, run `./clean.sh && ./run.sh`.
 
 You can control which stages to (re-)run by prepolutating/removing files in the `output` directory.
 For an overview over the individual stages, see the source code of `run.sh`.
 
-### Replication Package (`params_ase22.ini`)
+## File Structure
 
-(todo)
+All input information is contained in the `input` directory, including:
+* the evaluation parameters (`params.ini`)
+* the extraction script (`extract.sh`)
+* feature-model hierarchies available in `params.ini$HIERARCHIES` (`hierarchies`)
+During script execution, the `input` directory will also be populated with clones of all evaluated projects' repositories.
 
-The time measurements are stored in `output/results_*.csv`, errors in `output/error_*.log`.
+All results are then stored in the `output` directory, including:
+* extracted feature models (`models`), named after the following scheme:
+    ```
+    [project],[version],[iteration],[source].[xml|model]
+    ```
+* DIMACS files for said feature models (`dimacs`), named after the following scheme:
+    ```
+    [project],[version],[iteration],[source],[transformation].[xml|model]
+    ```
+* intermediate results (`intermediate` and `stage*`), useful for debugging
+* measurement results (`results_*.csv`)
+* warnings and errors (`error_*.log`)
 
-### Feature Model Repository (`params_repo.ini`)
+The R script `ase22_evaluation.R` can be used to analyze and visualize the measurement results by running it within `output` as the working directory.
 
-To build a repository of feature models and DIMACS files, acting like [ekuiter/feature-model-repository-pipeline](https://github.com/ekuiter/feature-model-repository-pipeline), set `SKIP_ANALYSIS=y` in `params.ini`.
-
-The transformed DIMACS files are stored in the `output/dimacs` directory, named after the following scheme:
-
-```
-[project],[version],[iteration],[source],[transformation].dimacs
-```
-
-## Advanced Usage
-
-### Im-/Export
+## Im-/Export
 
 To im-/export preconfigured Docker containers (download available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg)), run `./import.sh` and `./export.sh`, respectively.
 (This ensures the reproduceability of our results even when the Docker files fail to build from scratch.)
 
-### Debugging
+## Debugging
 
 To access the evaluation's Docker container while it is running (e.g., to `tail -f` the log file), run (where `$reader = kconfigreader|kclause`):
 

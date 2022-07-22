@@ -7,6 +7,11 @@ docker build -f stage1/kclause/Dockerfile -t stage1_kclause stage1
 docker build -f stage2/Dockerfile -t stage2 stage2
 docker build -f stage3/Dockerfile -t stage3 stage3
 
+mkdir -p export
+
 for container in ${CONTAINERS[@]}; do
-    docker save $container | gzip > $container.tar.gz
+    docker save $container | gzip > export/$container.tar.gz
 done
+
+cp -R input export/
+cp -R output export/

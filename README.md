@@ -36,11 +36,11 @@ Regardless of the use case, these steps should be followed to set up the automat
     cp input/params_repo.ini input/params.ini
     cp input/extract_repo.sh input/extract.sh
     ```
-* Finally, run the evaluation with `sudo ./run.sh` (`sudo` is recommended to avoid permission issues with files created by Docker).
-* On a remote machine, run `screen -dmSL evaluation sudo ./run.sh` and press `Ctrl A, D` to detach from an SSH session (run `screen -x evaluation` to re-attach and `sudo killall containerd dockerd kclause python3 java bash` to stop).
-* To re-run the evaluation, run `sudo ./clean.sh && sudo ./run.sh`.
+* Finally, run the evaluation with `./run.sh`.
+* On a remote machine, run `screen -dmSL evaluation ./run.sh` and press `Ctrl A, D` to detach from an SSH session (run `screen -x evaluation` to re-attach and `sudo killall containerd dockerd kclause python3 java bash` to stop).
+* To re-run the evaluation, run `./clean.sh && ./run.sh`.
 
-You can control which stages to (re-)run by prepolutating/removing files in the `data` directory.
+You can control which stages to (re-)run by prepolutating/removing files in the `output` directory.
 For an overview over the individual stages, see the source code of `run.sh`.
 
 ### Replication Package (`params_ase22.ini`)

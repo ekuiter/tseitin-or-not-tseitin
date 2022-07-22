@@ -13,5 +13,4 @@ for container in ${CONTAINERS[@]}; do
     docker save $container | gzip > export/$container.tar.gz
 done
 
-cp -R input export/
-cp -R output export/
+cp -R input output *.sh *.R export/

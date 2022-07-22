@@ -3,7 +3,10 @@
 This repository provides Docker-based automation scripts for investigating transformations of feature-model formulas into conjunctive normal form (CNF) and evaluating the impact of such CNF transformations on subsequent feature-model analyses using SAT and #SAT solvers.
 
 The repository has several purposes:
-* First, it serves as the replication package for our ASE'22 paper "Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses" (authored by Elias Kuiter, Sebastian Krieter, Chico Sundermann, Thomas Thüm, and Gunter Saake).
+
+* First, it contains all evaluation scripts for our ASE'22 paper *Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses* (authored by Elias Kuiter, Sebastian Krieter, Chico Sundermann, Thomas Thüm, and Gunter Saake).
+    **The replication package for our ASE'22 paper is available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg).**
+    It was generated according to the instructions below.
 * Second, it can be used to build a repository of feature models for Kconfig-based open-source projects (superseding [ekuiter/feature-model-repository-pipeline](https://github.com/ekuiter/feature-model-repository-pipeline)).
 * Third, it demonstrates how to apply the [FeatJAR](https://github.com/FeatJAR) infrastructure for authoring reproducible evaluations concerned with feature-model analysis.
 
@@ -46,12 +49,15 @@ For an overview over the individual stages, see the source code of `run.sh`.
 ## File Structure
 
 All input information is contained in the `input` directory, including:
+
 * the evaluation parameters (`params.ini`)
 * the extraction script (`extract.sh`)
 * feature-model hierarchies available in `params.ini$HIERARCHIES` (`hierarchies`)
+
 During script execution, the `input` directory will also be populated with clones of all evaluated projects' repositories.
 
 All results are then stored in the `output` directory, including:
+
 * extracted feature models (`models`), named after the following scheme:
     ```
     [project],[version],[iteration],[source].[xml|model]
@@ -66,10 +72,14 @@ All results are then stored in the `output` directory, including:
 
 The R script `ase22_evaluation.R` can be used to analyze and visualize the measurement results by running it within `output` as the working directory.
 
-## Im-/Export
+## Reproducibility
 
-To im-/export preconfigured Docker containers (download available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg)), run `./import.sh` and `./export.sh`, respectively.
-(This ensures the reproduceability of our results even when the Docker files fail to build from scratch.)
+In case any of the Docker images fails to build from scratch (e.g., some package is not available anymore or some server is down), we ensure reprocibility with the `export.sh` and `import.sh` scripts.
+
+* To export all Docker images, as well as all input and output information, run `./export.sh`.
+    The resulting `export` directory is suited for distribution as a replication package.
+* Given such an export, the Docker images can be loaded by running `./import.sh`.
+    The experiment can then be re-run with `rm -rf output && ./run.sh` after setting `SKIP_BUILD=n` in `input/params.ini`.
 
 ## Debugging
 
@@ -84,8 +94,3 @@ To start an interactive session in a (not already running) Docker container:
 ```
 docker run -it $reader /bin/bash
 ```
-
-### Evaluation results
-
-The results of the evaluation for our ASE'22 paper are available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg).
-

@@ -7,20 +7,29 @@ The repository has several purposes:
 * Second, it can be used to build a repository of feature models for Kconfig-based open-source projects (superseding [ekuiter/feature-model-repository-pipeline](https://github.com/ekuiter/feature-model-repository-pipeline)).
 * Third, it demonstrates how to apply the [FeatJAR](https://github.com/FeatJAR) infrastructure for authoring reproducible evaluations concerned with feature-model analysis.
 
-To support the first two use cases, we ship `params-ase22.ini` for replicating the evaluation of our ASE'22 paper and `params-repo.ini` for extracting a feature-model repository.
+To support the first two use cases, we ship `params_ase22.ini` for replicating the evaluation of our ASE'22 paper and `params_repo.ini` for extracting a feature-model repository.
 
 ## Getting Started
 
 Regardless of the use case, these steps should be followed to set up the automation correctly.
 
-* First, [install Docker](https://docs.docker.com/get-docker/) on a 64-bit Linux 5.x system. On Arch Linux, for example, run:
+* First, install [Docker](https://docs.docker.com/get-docker/) and other dependencies on a 64-bit Linux 5.x system or [WSL 2](https://docs.microsoft.com/de-de/windows/wsl/install).
+    On Arch Linux, for example, run:
     ```
     usermod -aG docker $(whoami) # then, log out and in again
-    sudo pacman -S docker
+    sudo pacman -S git subversion docker
     systemctl enable docker
     systemctl start docker
     ```
-* Then, set the evaluation parameters in `params.ini` (i.e., choose one of the predefined `params-*.ini`).
+* Then, choose one of the predefined `input/params_*.ini` files and copy it to `input/params.ini`, and do the same for `input/extract_*.sh`.
+    ```
+    cp input/params_ase22.ini input/params.ini
+    cp input/extract_ase22.sh input/extract.sh
+    ```
+    ```
+    cp input/params_repo.ini input/params.ini
+    cp input/extract_repo.sh input/extract.sh
+    ```
 * Finally, run the evaluation with `sudo ./run.sh` (`sudo` is recommended to avoid permission issues with files created by Docker).
 * On a remote machine, run `screen -dmSL evaluation sudo ./run.sh` and press `Ctrl A, D` to detach from an SSH session (run `screen -x evaluation` to re-attach and `sudo killall containerd dockerd kclause python3 java bash` to stop).
 * To re-run the evaluation, run `sudo ./clean.sh && sudo ./run.sh`.
@@ -28,17 +37,17 @@ Regardless of the use case, these steps should be followed to set up the automat
 You can control which stages to (re-)run by prepolutating/removing files in the `data` directory.
 For an overview over the individual stages, see the source code of `run.sh`.
 
-### Replication Package (`params-ase22.ini`)
+### Replication Package (`params_ase22.ini`)
 
 (todo)
 
-The time measurements are stored in `data/results_*.csv`, errors in `data/error_*.log`.
+The time measurements are stored in `output/results_*.csv`, errors in `output/error_*.log`.
 
-### Feature Model Repository (`params-repo.ini`)
+### Feature Model Repository (`params_repo.ini`)
 
 To build a repository of feature models and DIMACS files, acting like [ekuiter/feature-model-repository-pipeline](https://github.com/ekuiter/feature-model-repository-pipeline), set `SKIP_ANALYSIS=y` in `params.ini`.
 
-The transformed DIMACS files are stored in the `data/dimacs` directory, named after the following scheme:
+The transformed DIMACS files are stored in the `output/dimacs` directory, named after the following scheme:
 
 ```
 [project],[version],[iteration],[source],[transformation].dimacs
@@ -68,3 +77,4 @@ docker run -it $reader /bin/bash
 ### Evaluation results
 
 The results of the evaluation for our ASE'22 paper are available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg).
+

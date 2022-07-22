@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source extract_setup.sh
+source setup.sh
 
 # The point of this file is to extract feature models and DIMACS files for as many Kconfig-based projects and versions of these projects as possible.
 # More information on the systems below can be found in Berger et al.'s "Variability Modeling in the Systems Software Domain" (DOI: 10.1109/TSE.2013.34).

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source extract_setup.sh
+source setup.sh
 
 # The point of this file is to extract feature models for a representative selection of configurable systems based on the Kconfig configuration language.
 # More information on the systems below can be found in Berger et al.'s "Variability Modeling in the Systems Software Domain" (DOI: 10.1109/TSE.2013.34).
@@ -15,26 +15,25 @@ source extract_setup.sh
 # Iterate the process to improve accuracy of time measurement.
 # Also, model/DIMACS files produced by kconfigreader have nondeterministic clause order.
 
-# Run the analysis.
 linux_env="ARCH=x86,SRCARCH=x86,KERNELVERSION=kcu,srctree=./,CC=cc,LD=ld,RUSTC=rustc"
-run linux git v4.18 scripts/kconfig/*.o arch/x86/Kconfig $linux_env
-run axtls skip-checkout release-2.0.0 config/scripts/config/*.o config/Config.in
+run linux https://github.com/torvalds/linux v4.18 scripts/kconfig/*.o arch/x86/Kconfig $linux_env
+run axtls svn://svn.code.sf.net/p/axtls/code/trunk release-2.0.0 config/scripts/config/*.o config/Config.in
 export BR2_EXTERNAL=support/dummy-external
 export BUILD_DIR=/home/buildroot
 export BASE_DIR=/home/buildroot
 if echo $KCONFIG | grep -q buildroot; then
     run linux skip-model v4.17 scripts/kconfig/*.o arch/x86/Kconfig $linux_env
 fi
-run buildroot git 2021.11.2 /home/data/c-bindings/linux/v4.17.$BINDING Config.in
-run busybox git 1_35_0 scripts/kconfig/*.o Config.in
-run embtoolkit git embtoolkit-1.8.0 scripts/kconfig/*.o Kconfig
+run buildroot https://github.com/buildroot/buildroot 2021.11.2 /home/output/c-bindings/linux/v4.17.$BINDING Config.in
+run busybox https://github.com/mirror/busybox 1_35_0 scripts/kconfig/*.o Config.in
+run embtoolkit https://github.com/ndmsystems/embtoolkit embtoolkit-1.8.0 scripts/kconfig/*.o Kconfig
 if echo $KCONFIG | grep -q fiasco || echo $KCONFIG | grep -q freetz-ng; then
     run linux skip-model v5.0 scripts/kconfig/*.o arch/x86/Kconfig $linux_env
 fi
-run fiasco git 58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed /home/data/c-bindings/linux/v5.0.$BINDING src/Kconfig
-run freetz-ng git 5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af /home/data/c-bindings/linux/v5.0.$BINDING config/Config.in
+run fiasco https://github.com/kernkonzept/fiasco 58aa50a8aae2e9396f1c8d1d0aa53f2da20262ed /home/output/c-bindings/linux/v5.0.$BINDING src/Kconfig
+run freetz-ng https://github.com/Freetz-NG/freetz-ng 5c5a4d1d87ab8c9c6f121a13a8fc4f44c79700af /home/output/c-bindings/linux/v5.0.$BINDING config/Config.in
 if echo $KCONFIG | grep -q toybox; then
     run linux skip-model v2.6.12 scripts/kconfig/*.o arch/i386/Kconfig $linux_env
 fi
-run toybox git 0.8.6 /home/data/c-bindings/linux/v2.6.12.$BINDING Config.in
-run uclibc-ng git v1.0.40 extra/config/zconf.tab.o extra/Configs/Config.in
+run toybox https://github.com/landley/toybox 0.8.6 /home/output/c-bindings/linux/v2.6.12.$BINDING Config.in
+run uclibc-ng https://github.com/wbx-github/uclibc-ng v1.0.40 extra/config/zconf.tab.o extra/Configs/Config.in

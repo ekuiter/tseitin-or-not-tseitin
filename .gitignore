@@ -1,6 +1,10 @@
-/data*
+/output*
+/input/*/
+!/input/hierarchies
 /stage3/sat*
 /stage3/sharpsat*
 /stage3/*.jar
 /deploy.sh
 /.Rhistory
+/input/params.ini
+/input/extract.sh

@@ -7,5 +7,5 @@ RUN apt-get update && apt-get install -y --allow-unauthenticated \
     bc \
     dos2unix
 WORKDIR /home
-COPY solve_cnf.sh sat* sharpsat* *.jar ./
+COPY solve.sh sat* sharpsat* *.jar ./
 RUN chmod +x *.sh && dos2unix *.sh

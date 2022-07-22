@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-res=data/results_analyze.csv
-err=data/error_analyze.log
+res=output/results_analyze.csv
+err=output/error_analyze.log
 
 run-solver() (
-    log=data/$dimacs,$solver,$analysis.log
+    log=output/$dimacs,$solver,$analysis.log
     echo "    Running solver $solver for analysis $analysis"
     start=`date +%s.%N`
     (timeout $TIMEOUT_ANALYZE ./$solver input.dimacs > $log) || true
@@ -56,8 +56,8 @@ run-core-analysis() (
 echo system,iteration,source,transformation,solver,analysis,solve_time,satisfiable,model_count >> $res
 touch $err
 
-rm -rf data/dimacs/*.features
-for dimacs_path in data/dimacs/*.dimacs; do
+rm -rf output/dimacs/*.features
+for dimacs_path in output/dimacs/*.dimacs; do
     dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
     base_it=$(echo $dimacs_path | rev | cut -d, -f2- | rev)
     base=$(echo $base_it | sed 's/\(,.*,\).*,/\1/g')
@@ -81,7 +81,7 @@ for dimacs_path in data/dimacs/*.dimacs; do
         done
     fi
 done
-for dimacs_path in data/dimacs/*.dimacs; do
+for dimacs_path in output/dimacs/*.dimacs; do
     dimacs=$(basename $dimacs_path .dimacs | sed 's/,/_/')
     base=$(echo $dimacs_path | rev | cut -d, -f2- | rev | sed 's/\(,.*,\).*,/\1/g')
     echo "Solving $dimacs"

@@ -16,17 +16,6 @@ RUN git clone https://github.com/ckaestne/kconfigreader.git \
   && git checkout 913bf3178af5a8ac8bedc5e8733561ed38280cf9 \
   && sbt mkrun
 
-# clone the analyzed projects
-# RUN git clone https://github.com/torvalds/linux linux
-# RUN git clone https://github.com/buildroot/buildroot buildroot
-# RUN git clone https://github.com/mirror/busybox busybox
-# RUN git clone https://github.com/ndmsystems/embtoolkit embtoolkit
-# RUN git clone https://github.com/kernkonzept/fiasco fiasco
-# RUN git clone https://github.com/Freetz-NG/freetz-ng freetz-ng
-# RUN git clone https://github.com/landley/toybox toybox
-# RUN git clone https://github.com/wbx-github/uclibc-ng uclibc-ng
-# RUN svn checkout svn://svn.code.sf.net/p/axtls/code/tags/release-2.0.0 axtls
-
 # install dependencies of analyzed projects
 RUN apt-get update && apt-get install -y --allow-unauthenticated \
   flex \

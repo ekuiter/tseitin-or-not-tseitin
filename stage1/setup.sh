@@ -25,6 +25,7 @@ mkdir -p output
 echo -n > $LOG
 echo -n > $MODELS
 echo system,tag,c-binding,kconfig-file >> $MODELS
+git config --global --add safe.directory "*"
 
 # compiles the C program that extracts Kconfig constraints from Kconfig files
 # for kconfigreader and kclause, this compiles dumpconf and kextractor against the Kconfig parser, respectively

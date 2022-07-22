@@ -21,11 +21,17 @@ Regardless of the use case, these steps should be followed to set up the automat
     systemctl enable docker
     systemctl start docker
     ```
-* Then, choose one of the predefined `input/params_*.ini` files and copy it to `input/params.ini`, and do the same for `input/extract_*.sh`.
+* Clone this repository:
+    ```
+    git clone https://github.com/ekuiter/tseitin-or-not-tseitin.git && cd tseitin-or-not-tseitin
+    ```
+* Then, choose the evaluation parameters and an extraction script.
+    For replicating our ASE'22 evaluation, run:
     ```
     cp input/params_ase22.ini input/params.ini
     cp input/extract_ase22.sh input/extract.sh
     ```
+    For the feature model repository, run:
     ```
     cp input/params_repo.ini input/params.ini
     cp input/extract_repo.sh input/extract.sh

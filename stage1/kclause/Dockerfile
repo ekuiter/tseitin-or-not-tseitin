@@ -20,17 +20,6 @@ RUN git clone https://github.com/paulgazz/kmax.git \
   && git checkout c6e83a07d4f916267cb9e718c0b2de42ecfe4147 \
   && python3 setup.py install
 
-# clone the analyzed projects
-# RUN git clone https://github.com/torvalds/linux linux
-# RUN git clone https://github.com/buildroot/buildroot buildroot
-# RUN git clone https://github.com/mirror/busybox busybox
-# RUN git clone https://github.com/ndmsystems/embtoolkit embtoolkit
-# RUN git clone https://github.com/kernkonzept/fiasco fiasco
-# RUN git clone https://github.com/Freetz-NG/freetz-ng freetz-ng
-# RUN git clone https://github.com/landley/toybox toybox
-# RUN git clone https://github.com/wbx-github/uclibc-ng uclibc-ng
-# RUN svn checkout svn://svn.code.sf.net/p/axtls/code/tags/release-2.0.0 axtls
-
 # install dependencies of analyzed projects
 RUN apt-get update && apt-get install -y --allow-unauthenticated \
   build-essential

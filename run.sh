@@ -184,6 +184,5 @@ else
     echo Skipping stage 3
 fi
 
-cp params.ini output/params.ini
 echo
 cat output/error*

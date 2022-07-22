@@ -19,8 +19,8 @@ linux_env="ARCH=x86,SRCARCH=x86,KERNELVERSION=kcu,srctree=./,CC=cc,LD=ld,RUSTC=r
 run linux https://github.com/torvalds/linux v4.18 scripts/kconfig/*.o arch/x86/Kconfig $linux_env
 run axtls svn://svn.code.sf.net/p/axtls/code/trunk release-2.0.0 config/scripts/config/*.o config/Config.in
 export BR2_EXTERNAL=support/dummy-external
-export BUILD_DIR=/home/buildroot
-export BASE_DIR=/home/buildroot
+export BUILD_DIR=/home/input/buildroot
+export BASE_DIR=/home/input/buildroot
 if echo $KCONFIG | grep -q buildroot; then
     run linux skip-model v4.17 scripts/kconfig/*.o arch/x86/Kconfig $linux_env
 fi

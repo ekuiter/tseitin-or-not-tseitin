@@ -1,7 +1,6 @@
 /output*
 /input/*/
 !/input/hierarchies
-/deploy.sh
 /.Rhistory
 /input/params.ini
 /input/extract.sh

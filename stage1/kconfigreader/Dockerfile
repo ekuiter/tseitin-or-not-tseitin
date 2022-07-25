@@ -3,7 +3,6 @@ FROM ubuntu:14.04
 # install (tested) dependencies of kconfigreader and evaluation scripts
 RUN apt-get update && apt-get install -y --allow-unauthenticated \
   git \
-  subversion \
   openjdk-7-jdk \
   wget
 COPY kconfigreader/sbt-0.13.6.deb .

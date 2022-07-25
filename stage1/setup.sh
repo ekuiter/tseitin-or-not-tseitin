@@ -120,11 +120,6 @@ git-checkout() (
     fi
 )
 
-svn-checkout() (
-    rm -rf input/$1
-    svn checkout $2 input/$1
-)
-
 run() (
     set -e
     if [[ $2 != skip-model ]] && ! echo $KCONFIG | grep -q $1,$3; then
@@ -140,12 +135,7 @@ run() (
         trap 'ec=$?; (( ec != 0 )) && (rm -f /home/output/models/'$1'/'$3'.'$READER'* && echo FAIL | tee -a $LOG) || (echo SUCCESS | tee -a $LOG)' EXIT
         if [[ $2 != skip-checkout ]]; then
             echo "Checking out $3 in $1" | tee -a $LOG
-            if [[ $2 == svn* ]]; then
-                vcs=svn-checkout
-                else
-                vcs=git-checkout
-            fi
-            eval $vcs $1 $2 $3
+            eval git-checkout $1 $2 $3
         fi
         cd input/$1
         if [ ! $binding_path = $4 ]; then

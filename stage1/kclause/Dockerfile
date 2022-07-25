@@ -3,7 +3,6 @@ FROM ubuntu:18.04
 # install (tested) dependencies of kmax/kclause and evaluation scripts
 RUN apt-get update && apt-get install -y --allow-unauthenticated \
   git \
-  subversion \
   python3-setuptools \
   python3-dev \
   flex \

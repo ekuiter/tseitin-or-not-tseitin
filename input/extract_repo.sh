@@ -28,9 +28,9 @@ for tag in $(git -C linux tag | grep -v rc | grep -v tree | grep -v v2.6.11); do
 done
 
 # axTLS
-svn-checkout axtls svn://svn.code.sf.net/p/axtls/code/trunk
-for tag in $(cd axtls; svn ls ^/tags); do
-    run axtls svn://svn.code.sf.net/p/axtls/code/tags/$(echo $tag | tr / ' ') $(echo $tag | tr / ' ') config/scripts/config/*.o config/Config.in
+git-checkout axtls https://github.com/ekuiter/axTLS
+for tag in $(git -C axtls tag); do
+    run axtls https://github.com/ekuiter/axTLS $tag config/scripts/config/*.o config/Config.in
 done
 
 # Buildroot

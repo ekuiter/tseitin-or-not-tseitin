@@ -21,7 +21,7 @@ Regardless of the use case, these steps should be followed to set up the automat
     On Arch Linux, for example, run:
     ```
     usermod -aG docker $(whoami) # then, log out and in again
-    sudo pacman -S git subversion docker
+    sudo pacman -S git docker
     systemctl enable docker
     systemctl start docker
     ```

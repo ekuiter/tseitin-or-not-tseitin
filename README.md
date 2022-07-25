@@ -1,5 +1,7 @@
 # Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses
 
+![Evaluation Stages](stages.svg)
+
 This repository provides Docker-based automation scripts for investigating transformations of feature-model formulas into conjunctive normal form (CNF) and evaluating the impact of such CNF transformations on subsequent feature-model analyses using SAT and #SAT solvers.
 
 The repository has several purposes:

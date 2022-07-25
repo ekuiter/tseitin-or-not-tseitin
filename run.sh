@@ -34,7 +34,7 @@ if [[ ! -d output/models ]]; then
 
         # run evaluation script inside Docker container
         # for other evaluations, you can run other scripts (e.g., extract_all.sh)
-        docker run --rm -m 16g -e KCONFIG -e N -v $PWD/output/stage1_${reader}_output:/home/output -v $PWD/input:/home/input stage1_$reader ./input/extract.sh
+        docker run --rm -m $MEMORY_LIMIT -e KCONFIG -e N -v $PWD/output/stage1_${reader}_output:/home/output -v $PWD/input:/home/input stage1_$reader ./input/extract.sh
         
         # arrange files for further processing
         for system in output/stage1_${reader}_output/models/*; do
@@ -69,7 +69,7 @@ if [[ ! -d output/intermediate ]] || [[ ! -d output/dimacs ]]; then
     if [[ $SKIP_BUILD != y ]]; then
         docker build -f stage2/Dockerfile -t stage2 stage2
     fi
-    docker run --rm -m 16g -e TIMEOUT_TRANSFORM -v $PWD/output/stage2_output:/home/spldev/evaluation-cnf/output stage2 evaluation-cnf/transform.sh
+    docker run --rm -m $MEMORY_LIMIT -e TIMEOUT_TRANSFORM -v $PWD/output/stage2_output:/home/spldev/evaluation-cnf/output stage2 evaluation-cnf/transform.sh
 
     # arrange files for further processing
     for file in output/stage2_output/*/temp/*.@(dimacs|smt|model|stats); do
@@ -92,7 +92,7 @@ if ! ls output/dimacs | grep -q z3; then
         if [[ $SKIP_BUILD != y ]]; then
             docker build -f stage1/$reader/Dockerfile -t stage1_$reader stage1
         fi
-        docker run --rm -m 16g -e TIMEOUT_TRANSFORM -v $PWD/output/stage2_${reader}_output:/home/output stage1_$reader ./transform.sh
+        docker run --rm -m $MEMORY_LIMIT -e TIMEOUT_TRANSFORM -v $PWD/output/stage2_${reader}_output:/home/output stage1_$reader ./transform.sh
         cp output/stage2_${reader}_output/*.dimacs output/dimacs || true
     done
 else
@@ -179,7 +179,7 @@ if [ ! -f $res ] && [[ $SKIP_ANALYSIS != y ]]; then
     if [[ $SKIP_BUILD != y ]]; then
         docker build -f stage3/Dockerfile -t stage3 stage3
     fi
-    docker run --rm -m 16g -e ANALYSES -e TIMEOUT_ANALYZE -e RANDOM_SEED -e NUM_FEATURES -e SOLVERS -v $PWD/output/stage3_output:/home/output stage3 ./solve.sh
+    docker run --rm -m $MEMORY_LIMIT -e ANALYSES -e TIMEOUT_ANALYZE -e RANDOM_SEED -e NUM_FEATURES -e SOLVERS -v $PWD/output/stage3_output:/home/output stage3 ./solve.sh
     cp output/stage3_output/results_analyze.csv $res
     cp output/stage3_output/error_analyze.log $err
     cat $res_miss >> $res

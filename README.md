@@ -8,7 +8,7 @@ The repository has several purposes:
 
 * First, it contains all evaluation scripts for our ASE'22 paper *Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses* (authored by Elias Kuiter, Sebastian Krieter, Chico Sundermann, Thomas Thüm, and Gunter Saake).
     
-    **The replication package for our ASE'22 paper is available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg).**
+    **The replication package for our ASE'22 paper is available [here](https://doi.org/10.5281/zenodo.6525375).**
     It was generated according to the instructions below.
 * Second, it can be used to build a repository of feature models for Kconfig-based open-source projects (superseding [ekuiter/feature-model-repository-pipeline](https://github.com/ekuiter/feature-model-repository-pipeline)).
 * Third, it demonstrates how to apply the [FeatJAR](https://github.com/FeatJAR) infrastructure for authoring reproducible evaluations concerned with feature-model analysis.
@@ -84,7 +84,7 @@ In case any of the Docker images fails to build from scratch (e.g., some package
 * Given such an export, the Docker images can be loaded by running `./import.sh`.
     The experiment can then be re-run with `rm -rf output && ./run.sh` after setting `SKIP_BUILD=n` in `input/params.ini`.
 
-The replication package for our ASE'22 paper is available [here](https://cloud.ovgu.de/s/pLyGicS95Z98bzg).
+The replication package for our ASE'22 paper is available [here](https://doi.org/10.5281/zenodo.6525375).
 
 ## Debugging
 

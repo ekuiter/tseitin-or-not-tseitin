@@ -82,7 +82,7 @@ In case any of the Docker images fails to build from scratch (e.g., some package
 * To export all Docker images, as well as all input and output information, run `./export.sh`.
     The resulting `export` directory is suited for distribution as a replication package.
 * Given such an export, the Docker images can be loaded by running `./import.sh`.
-    The experiment can then be re-run with `rm -rf output && ./run.sh` after setting `SKIP_BUILD=n` in `input/params.ini`.
+    The experiment can then be re-run with `rm -rf output && ./run.sh` after setting `SKIP_BUILD=y` in `input/params.ini`.
 
 The replication package for our ASE'22 paper is available [here](https://doi.org/10.5281/zenodo.6525375).
 

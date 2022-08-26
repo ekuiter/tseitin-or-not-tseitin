@@ -16,140 +16,143 @@ baseline = "Z3"
 exclude_system = "toybox"
 read_satisfiable = FALSE
 
-# read CSV files
-transform = read_csv("results_transform.csv", col_type="cncnnncnnn")
-analyze = read_csv("results_analyze.csv",
-                   col_type=if(read_satisfiable) "cnccccnlc" else "cnccccnc")
-if (!read_satisfiable) analyze$satisfiable = TRUE
-
-# discard iterations by taking the median and join tables
-transform = aggregate(
-  cbind(extract_time, extract_variables, extract_literals, transform_time,
-        transform_variables, transform_literals) ~
-    system + source + transformation,
-  data=transform, median, na.action=na.pass)
-analyze = merge(
-  merge(
-    aggregate(solve_time ~ system + source + transformation + solver + analysis,
-              data=analyze, median, na.action=na.pass),
-    aggregate(satisfiable ~ system + source + transformation + solver + analysis,
-              data=analyze, median, na.action=na.pass)),
-  aggregate(model_count ~ system + source + transformation + solver + analysis,
-            data=analyze, median, na.action=na.pass))
-data = merge(transform, analyze)
-
-# better labels
-formatter = scales::number_format(accuracy = 1, scale = 1/1000, suffix = "k")
-data = data %>%
-  mutate(transformation=
-           str_replace(transformation, "featureide", "FeatureIDE")) %>%
-  mutate(transformation=
-           str_replace(transformation, "kconfigreader", "KConfigReader")) %>%
-  mutate(transformation=
-           str_replace(transformation, "z3", "Z3"))
-
-# add columns
-capitalize = function(c) {
-  gsub("([\\w])([\\w]+)", "\\U\\1\\L\\2", c, perl=TRUE) }
-data$system_long = paste(data$system, data$source)
-data$system_short = str_split(data$system, "_") %>% map(1) %>% flatten_chr()
-data$solver_short = str_split(data$solver, "-") %>% map(2) %>% flatten_chr()
-data$analysis = str_split(data$analysis, "-") %>% map(1) %>% flatten_chr()
-data$analysis_short = capitalize(
-  str_split(data$analysis, "\\d") %>% map(1) %>% flatten_chr())
-data$analysis_short = ifelse(
-  startsWith(data$solver, "sharpsat"),
-  ifelse(data$analysis_short == "Void", "FMC", "FC"),
-  data$analysis_short)
-data$analysis_short = ifelse(
-  data$analysis_short == "Core" | data$analysis_short == "Dead",
-  "Core/Dead",
-  data$analysis_short)
-
-# calculate solve time and model count relative to the baseline
-is.true = function(x) { !is.na(x) & x }
-data = data %>%
-  group_by(system, source) %>%
-  mutate(transform_time_rel=
-           transform_time/transform_time[transformation == baseline]) %>%
-  mutate(transform_variables_rel=
-           transform_variables/transform_variables[transformation == baseline]) %>%
-  mutate(transform_literals_rel=
-           transform_literals/transform_literals[transformation == baseline]) %>%
-  ungroup() %>%
-  group_by(system, source, solver, analysis) %>%
-  mutate(solve_time_rel=solve_time/solve_time[transformation == baseline]) %>%
-  mutate(solve_time_fail=
-           is.na(solve_time[transformation == baseline]) &&
-           !is.na(solve_time)) %>%
-  mutate(model_count_rel=
-           `if`(is.true(as.bigz(model_count[transformation == baseline]) > 0),
-                as.numeric(as.bigz(model_count)/
-                             as.bigz(model_count[transformation == baseline])),
-                NA)) %>%
-  mutate(model_count_1=
-           `if`(is.true(as.bigz(model_count[transformation == baseline]) > 0),
-                as.character(as.bigz(model_count)/
-                             as.bigz(model_count[transformation == baseline])),
-                NA)) %>%
-  mutate(model_count_fail=
-           !is.true(as.bigz(model_count[transformation == baseline]) > 0) &&
-           is.true(as.bigz(model_count) > 0)) %>%
-  ungroup()
-
-# filter and preprocess data
-data = data[which(!startsWith(data$system, exclude_system)),]
-fdata = function(system="", solver="", analysis="", remove_baseline = FALSE) {
-  data = data[which(startsWith(data$system, system)),]
-  data = data[which(startsWith(data$solver, solver)),]
-  data = data[which(startsWith(data$analysis, analysis)),]
-  if (remove_baseline) data = data[which(data$transformation != baseline),]
-  return(data)
+if (!exists("analyze")) {
+  # read CSV files
+  transform = read_csv("results_transform.csv", col_type="cncnnncnnn")
+  analyze = read_csv("results_analyze.csv",
+                     col_type=if(read_satisfiable) "cnccccnlc" else "cnccccnc")
+  if (!read_satisfiable) analyze$satisfiable = TRUE
+  
+  # discard iterations by taking the median and join tables
+  transform = aggregate(
+    cbind(extract_time, extract_variables, extract_literals, transform_time,
+          transform_variables, transform_literals) ~
+      system + source + transformation,
+    data=transform, median, na.action=na.pass)
+  analyze = merge(
+    merge(
+      aggregate(solve_time ~ system + source + transformation + solver + analysis,
+                data=analyze, median, na.action=na.pass),
+      aggregate(satisfiable ~ system + source + transformation + solver + analysis,
+                data=analyze, median, na.action=na.pass)),
+    aggregate(model_count ~ system + source + transformation + solver + analysis,
+              data=analyze, median, na.action=na.pass))
+  data = merge(transform, analyze)
+  
+  # better labels
+  formatter = scales::number_format(accuracy = 1, scale = 1/1000, suffix = "k")
+  data = data %>%
+    mutate(transformation=
+             str_replace(transformation, "featureide", "FeatureIDE")) %>%
+    mutate(transformation=
+             str_replace(transformation, "kconfigreader", "KConfigReader")) %>%
+    mutate(transformation=
+             str_replace(transformation, "z3", "Z3"))
+  
+  # add columns
+  capitalize = function(c) {
+    gsub("([\\w])([\\w]+)", "\\U\\1\\L\\2", c, perl=TRUE) }
+  data$system_long = paste(data$system, data$source)
+  data$system_short = str_split(data$system, "_") %>% map(1) %>% flatten_chr()
+  data$solver_short = str_split(data$solver, "-") %>% map(2) %>% flatten_chr()
+  data$analysis = str_split(data$analysis, "-") %>% map(1) %>% flatten_chr()
+  data$analysis_short = capitalize(
+    str_split(data$analysis, "\\d") %>% map(1) %>% flatten_chr())
+  data$analysis_short = ifelse(
+    startsWith(data$solver, "sharpsat"),
+    ifelse(data$analysis_short == "Void", "FMC", "FC"),
+    data$analysis_short)
+  data$analysis_short = ifelse(
+    data$analysis_short == "Core" | data$analysis_short == "Dead",
+    "Core/Dead",
+    data$analysis_short)
+  
+  # calculate solve time and model count relative to the baseline
+  is.true = function(x) { !is.na(x) & x }
+  data = data %>%
+    group_by(system, source) %>%
+    mutate(transform_time_rel=
+             transform_time/transform_time[transformation == baseline]) %>%
+    mutate(transform_variables_rel=
+             transform_variables/transform_variables[transformation == baseline]) %>%
+    mutate(transform_literals_rel=
+             transform_literals/transform_literals[transformation == baseline]) %>%
+    ungroup() %>%
+    group_by(system, source, solver, analysis) %>%
+    mutate(solve_time_rel=solve_time/solve_time[transformation == baseline]) %>%
+    mutate(solve_time_fail=
+             is.na(solve_time[transformation == baseline]) &&
+             !is.na(solve_time)) %>%
+    mutate(model_count_rel=
+             `if`(is.true(as.bigz(model_count[transformation == baseline]) > 0),
+                  as.numeric(as.bigz(model_count)/
+                               as.bigz(model_count[transformation == baseline])),
+                  NA)) %>%
+    mutate(model_count_1=
+             `if`(is.true(as.bigz(model_count[transformation == baseline]) > 0),
+                  as.character(as.bigz(model_count)/
+                               as.bigz(model_count[transformation == baseline])),
+                  NA)) %>%
+    mutate(model_count_fail=
+             !is.true(as.bigz(model_count[transformation == baseline]) > 0) &&
+             is.true(as.bigz(model_count) > 0)) %>%
+    ungroup()
+  
+  # filter and preprocess data
+  data = data[which(!startsWith(data$system, exclude_system)),]
+  fdata = function(system="", solver="", analysis="", remove_baseline = FALSE) {
+    data = data[which(startsWith(data$system, system)),]
+    data = data[which(startsWith(data$solver, solver)),]
+    data = data[which(startsWith(data$analysis, analysis)),]
+    if (remove_baseline) data = data[which(data$transformation != baseline),]
+    return(data)
+  }
+  foutliers = function(data, c, test) {
+    data[which(test(pull(data, !!sym(c)))),] }
+  outliers = function(data, c, x, test=is.na, label="") {
+    outliers = merge(
+      data %>% count(!!sym(x)) %>% rename(nall=n),
+      foutliers(data, c, test) %>%
+        count(!!sym(x)) %>% rename(nfail=n), all=TRUE)
+    outliers[is.na(outliers)] = 0
+    outliers$label =
+      sprintf("%s %s",
+              scales::percent((outliers$nall-outliers$nfail)/outliers$nall),
+              label)
+    outliers$color = "black"
+    return(outliers)
+  }
+  outliers_2dim = function(data, c, test=is.na, label="") {
+    outliers = merge(
+      data %>% count(transformation, analysis_short) %>% rename(nall=n),
+      foutliers(data, c, test) %>%
+        count(transformation, analysis_short) %>% rename(nfail=n), all=TRUE)
+    outliers[is.na(outliers)] = 0
+    outliers$label = scales::percent(
+      (outliers$nall-outliers$nfail)/outliers$nall, accuracy=0.1)
+    outliers$color = "black"
+    return(outliers)
+  }
+  transform_data = fdata() %>%
+    distinct(system, source, transformation, transform_time, transform_time_rel,
+             transform_variables, transform_variables_rel,
+             transform_literals, transform_literals_rel)
+  transform_data$analysis_short = "Transformation"
+  transform_data$solve_time_rel = transform_data$transform_time_rel
+  time_data = union_all(
+    fdata() %>% select(transformation, analysis_short, solve_time_rel),
+    transform_data %>% select(transformation, analysis_short, solve_time_rel)) %>%
+    rename(time="solve_time_rel")
 }
-foutliers = function(data, c, test) {
-  data[which(test(pull(data, !!sym(c)))),] }
-outliers = function(data, c, test=is.na, label="") {
-  outliers = merge(
-    data %>% count(transformation) %>% rename(nall=n),
-    foutliers(data, c, test) %>%
-      count(transformation) %>% rename(nfail=n), all=TRUE)
-  outliers[is.na(outliers)] = 0
-  outliers$label =
-    sprintf("%s/%s (%s) %s", outliers$nall-outliers$nfail, outliers$nall,
-            scales::percent((outliers$nall-outliers$nfail)/outliers$nall),
-            label)
-  outliers$color = "black"
-  return(outliers)
-}
-outliers_2dim = function(data, c, test=is.na, label="") {
-  outliers = merge(
-    data %>% count(transformation, analysis_short) %>% rename(nall=n),
-    foutliers(data, c, test) %>%
-      count(transformation, analysis_short) %>% rename(nfail=n), all=TRUE)
-  outliers[is.na(outliers)] = 0
-  outliers$label = scales::percent(
-    (outliers$nall-outliers$nfail)/outliers$nall, accuracy=0.1)
-  outliers$color = "black"
-  return(outliers)
-}
-transform_data = fdata() %>%
-  distinct(system, source, transformation, transform_time, transform_time_rel,
-           transform_variables, transform_variables_rel,
-           transform_literals, transform_literals_rel)
-transform_data$analysis_short = "Transformation"
-transform_data$solve_time_rel = transform_data$transform_time_rel
-time_data = union_all(
-  fdata() %>% select(transformation, analysis_short, solve_time_rel),
-  transform_data %>% select(transformation, analysis_short, solve_time_rel)) %>%
-  rename(time="solve_time_rel")
 
 # failed to relate solve time / model count to baseline for this data
 data[which(data$solve_time_fail | data$model_count_fail),]
 
-# failed to determine satisfiability
-data[which(!is.na(data$solve_time) & is.na(data$model_count) & is.na(data$satisfiable)),]
-fdata("", "sharpsat") %>% nrow()
-fdata("", "sharpsat") %>% filter(!is.na(transform_time) & is.na(solve_time)) %>% nrow()
+# failed to determine satisfiability / model count
+fdata("", "sat") %>% filter(!is.na(transform_time)) %>% nrow()
+fdata("", "sat") %>% filter(!is.na(transform_time) & !is.na(satisfiable)) %>% nrow()
+fdata("", "sharpsat") %>% filter(!is.na(transform_time)) %>% nrow()
+fdata("", "sharpsat") %>% filter(!is.na(transform_time) & !is.na(model_count)) %>% nrow()
 
 # satisfiability/model count does not match for this data
 data %>%
@@ -157,17 +160,16 @@ data %>%
   mutate(satisfiability_equal=satisfiable == satisfiable[transformation == baseline]) %>%
   ungroup() %>%
   filter(satisfiability_equal==FALSE)
-data %>%
-       group_by(system, source, solver, analysis) %>%
-       mutate(mce=model_count == model_count[transformation == baseline]) %>%
-       mutate(mc=paste(model_count, model_count[transformation == baseline])) %>%
-       ungroup() %>%
-       filter(mce==FALSE)
-data %>% filter(!is.na(transform_time) & startsWith(solver,"sharp") & is.na(solve_time))
-data %>% filter(!is.na(transform_time) & startsWith(solver,"sharp") & !is.na(solve_time)) %>%
-    group_by(system, source, solver, analysis) %>%
-    mutate(mce=if(length(model_count[transformation == baseline])==0) TRUE else model_count == model_count[transformation == baseline]) %>% filter(transformation == "KConfigReader" & analysis_short == "FMC") %>% filter(mce==FALSE) %>% nrow()
-data %>% filter(transformation == "KConfigReader" & (model_count_1) != "NA" & model_count_rel > 1 & analysis_short == "FC") %>% select(system,source,solver,analysis,model_count_rel,model_count_1) %>% summarize(min=min(model_count_rel),max=max(model_count_rel),median=median(model_count_rel))
+fdata("", "sharpsat") %>% filter(!is.na(transform_time) & !is.na(model_count)) %>%
+  group_by(system, source, solver, analysis) %>%
+  mutate(mce=if(length(model_count[transformation == baseline])==0) TRUE
+         else model_count == model_count[transformation == baseline]) %>%
+  mutate(mc=paste(model_count, model_count[transformation == baseline])) %>%
+  filter(transformation == "KConfigReader" & mce==FALSE) 
+data %>% filter(transformation == "KConfigReader" &
+                  (model_count_1) != "NA" & model_count_rel > 1 & analysis_short == "FC") %>%
+  select(system,source,solver,analysis,model_count_rel,model_count_1) %>%
+  summarize(min=min(model_count_rel),max=max(model_count_rel),median=median(model_count_rel))
 
 # median of transformation runtimes
 merge(data, data %>% filter(transformation=="FeatureIDE" & !is.na(transform_time)) %>%
@@ -176,16 +178,29 @@ merge(data, data %>% filter(transformation=="FeatureIDE" & !is.na(transform_time
   summarise(median=median(transform_time, na.rm=TRUE))
 
 # quartiles of solver runtimes
-fdata("", "sat") %>% group_by(transformation) %>%
+data %>% group_by(transformation) %>%
   summarise(median=median(solve_time_rel, na.rm=TRUE),
             iqr=IQR(solve_time_rel, na.rm=TRUE),
-            q1=quantile(solve_time_rel, na.rm=TRUE)[1]-1,
-            q2=quantile(solve_time_rel, na.rm=TRUE)[2]-1,
-            q4=quantile(solve_time_rel, na.rm=TRUE)[4]-1,
-            q5=quantile(solve_time_rel, na.rm=TRUE)[5]-1)
+            q1=quantile(solve_time_rel, na.rm=TRUE)[1],
+            q2=quantile(solve_time_rel, na.rm=TRUE)[2],
+            q4=quantile(solve_time_rel, na.rm=TRUE)[4],
+            q5=quantile(solve_time_rel, na.rm=TRUE)[5])
 
 # Z3 fastest
-fast = function(t) {(merge(data, fdata("", "") %>% group_by(system, source, solver, analysis) %>% summarise(min=min(solve_time, na.rm=TRUE), .groups="keep") %>% ungroup()) %>% filter(transformation==t&min==solve_time) %>% nrow()) / (merge(data, fdata("", "") %>% group_by(system, source, solver, analysis) %>% summarise(min=min(solve_time, na.rm=TRUE), .groups="keep") %>% ungroup()) %>% filter(transformation==t&!is.infinite(min)) %>% nrow())}
+fast = function(t) {
+  (merge(data, fdata("", "") %>%
+           group_by(system, source, solver, analysis) %>%
+           summarise(min=min(solve_time, na.rm=TRUE), .groups="keep") %>%
+           ungroup()) %>%
+     filter(transformation==t&min==solve_time) %>%
+     nrow()) /
+    (merge(data, fdata("", "") %>%
+             group_by(system, source, solver, analysis) %>%
+             summarise(min=min(solve_time, na.rm=TRUE), .groups="keep") %>%
+             ungroup()) %>%
+       filter(transformation==t&!is.infinite(min)) %>%
+       nrow())
+}
 fast("Z3") + fast("FeatureIDE") + fast("KConfigReader")
 
 # serialize data
@@ -212,10 +227,10 @@ logx = function(p) { p %>% ggpar(xscale="log10") }
 logy = function(p) { p %>% ggpar(yscale="log10") }
 labx = function(p, l) { p %>% ggpar(xlab=l) }
 laby = function(p, l) { p %>% ggpar(ylab=l) }
-plot = function(p, export=NA) { 
+plot = function(p, export=NA, width=7, height=4) { 
   p = p %>% ggpar(palette=palette)
   if (!is.na(export))
-    p %>% ggexport(filename=sprintf("results/%s.pdf", export), width=7, height=4)
+    p %>% ggexport(filename=sprintf("results/%s.pdf", export), width=width, height=height)
   p %>% print()
 }
 relative = function(p, y=1) { p %>%
@@ -234,7 +249,7 @@ if (0) melt(transform_data %>%
             measure.vars = c("Transform Time", "#Variables", "#Literals")) %>%
   ggboxplot(x="transformation", y="value", color="variable", outlier.shape=20, na.rm=TRUE) %>%
   relative() %>%
-  label(outliers(transform_data, "transform_time"), "transformation", 0.1) %>%
+  label(outliers(transform_data, "transform_time", "transformation"), "transformation", 0.1) %>%
   logy() %>%
   labx("CNF Transformation Tool") %>%
   laby("Transform Time / Formula Size (log10, rel. to Z3)") %>%
@@ -245,7 +260,7 @@ if (0) melt(transform_data %>%
 if (0) for (s in c("sat", "sharpsat")) fdata("", s) %>%
   ggboxplot(x="transformation", y="solve_time_rel", color="analysis_short", outlier.shape=20, na.rm=TRUE) %>%
   relative() %>%
-  label(outliers(fdata("", s), "solve_time"), "transformation", if (s == "sat") 0.2 else 0.1) %>%
+  label(outliers(fdata("", s), "solve_time", "transformation"), "transformation", if (s == "sat") 0.2 else 0.1) %>%
   logy() %>%
   labx("CNF Transformation Tool") %>%
   laby("Solve Time (log10, rel. to Z3)") %>%
@@ -262,19 +277,6 @@ if(0) fdata("", "sat", "", TRUE) %>%
   add(labs(color="Transformation")) %>%
   plot()
 
-# model count correctness
-if (0) fdata("", "sharpsat") %>%
-  filter(model_count_rel < 1e+8) %>%
-  arrange(transformation) %>%
-  ggboxplot(x="transformation", y="model_count_rel", color="analysis_short", outlier.shape=20, na.rm=TRUE) %>%
-  relative() %>%
-  label(outliers(fdata("", "sharpsat") %>% filter(!is.na(solve_time)), "model_count_rel", \(x) x > 1e+8, "\n< 1e+8"), "transformation", 1e+6) %>%
-  logy() %>%
-  labx("CNF Transformation Tool") %>%
-  laby("Model Count (log10, rel. to Z3)") %>%
-  add(labs(color="Analysis")) %>%
-  plot()
-
 # solve time by system
 if (0) for (s in c("sat", "sharpsat")) fdata("", s, "void") %>%
   ggboxplot(x="transformation", y="solve_time_rel", outlier.shape=20, na.rm=TRUE) %>%
@@ -289,22 +291,9 @@ if (0) for (solver in c("sat")) fdata("", solver, "", FALSE) %>%
   facet(facet.by = "solver") %>%
   plot()
 
-# RQ1 and RQ2
-time_data %>%
-  ggboxplot(x="analysis_short", y="time", color="transformation", outlier.shape=20, na.rm=TRUE,
-            order=c("Transformation", "Void", "Core/Dead", "FMC", "FC")) %>%
-  relative() %>%
-  add(geom_text(data=outliers_2dim(time_data, "time"), fontface="italic",
-                aes(x=analysis_short, y=0.05, color=transformation, label=label, angle=30),
-                position=position_dodge(width=0.8), size=3.5, vjust=-1)) %>%
-  logy() %>%
-  labx("Algorithm") %>%
-  laby("Algorithm Runtime (log10, rel. to Z3)") %>%
-  add(labs(color="CNF Transformation Tool")) %>%
-  plot("rq12")
-
-# RQ2: solve time by size
-for (s in c("sat", "sharpsat")) fdata("", s, "", TRUE) %>%
+# solve time by size
+if (0)
+  for (s in c("sat", "sharpsat")) fdata("", s, "", TRUE) %>%
   ggboxplot(x="extract_literals", y="solve_time_rel", color="transformation", outlier.shape=20, na.rm=TRUE) %>%
   add(geom_boxplot(data=fdata("", s, "", TRUE) %>% filter(is.na(solve_time_rel)) %>% mutate(solve_time_rel=25),
                    aes(x=as.factor(extract_literals), y=solve_time_rel, color=transformation), na.rm=TRUE)) %>%
@@ -317,6 +306,39 @@ for (s in c("sat", "sharpsat")) fdata("", s, "", TRUE) %>%
   add(labs(color="Transformation")) %>%
   add(rotate_x_text()) %>%
   plot(sprintf("rq2-%s", s))
+
+# RQ1 and RQ2
+time_data %>%
+  filter(time < 1e+2) %>%
+  ggboxplot(x="analysis_short", y="time", color="transformation", outlier.shape=20, na.rm=TRUE,
+            order=c("Transformation", "Void", "Core/Dead", "FMC", "FC")) %>%
+  relative() %>%
+  add(geom_text(data=outliers_2dim(time_data, "time"), fontface="italic",
+                aes(x=analysis_short, y=0.05, color=transformation, label=label), #angle=30),
+                position=position_dodge(width=0.8), vjust=-1)) %>%
+  add(geom_text(data=outliers_2dim(time_data, "time", \(x) x > 1e+2), fontface="italic",
+                aes(x=analysis_short, y=1e+2, color=transformation, label=label), #angle=30),
+                position=position_dodge(width=0.8), vjust=-1)) %>%
+  add(geom_text(data=time_data, aes(x=analysis_short, y=160, fontface="italic", label="\n\n< 100"), check_overlap = TRUE)) %>%
+  logy() %>%
+  labx("Algorithm") %>%
+  laby("Algorithm Runtime (log10, rel. to Z3)") %>%
+  add(labs(color="CNF Transformation Tool")) %>%
+  plot("rq12", 12, 5)
+
+# model count correctness
+fdata("", "sharpsat") %>%
+  filter(model_count_rel < 1e+2) %>%
+  arrange(transformation) %>%
+  ggboxplot(x="transformation", y="model_count_rel", color="analysis_short", outlier.shape=20, na.rm=TRUE) %>%
+  relative() %>%
+  add(geom_text(data=fdata("", "sharpsat"), aes(x=transformation, y=0.4*1e+3, label=""))) %>%
+  label(outliers(fdata("", "sharpsat") %>% filter(!is.na(model_count)), "model_count_rel", "transformation", \(x) x > 1e+2, "< 100"), "transformation", 0.3*1e+3) %>%
+  logy() %>%
+  labx("CNF Transformation Tool") %>%
+  laby("Model Count (log10, rel. to Z3)") %>%
+  add(labs(color="Analysis")) %>%
+  plot("rq3", 6, 4)
 
 sig_test(transform_data, transform_time ~ transformation)
 sig_test(data, solve_time ~ transformation)

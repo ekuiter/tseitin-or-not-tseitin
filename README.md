@@ -14,7 +14,7 @@ The repository has several purposes:
     **The replication package for our ASE'22 paper is available [here](https://doi.org/10.5281/zenodo.6525375).**
     It was generated according to the instructions below.
 * Second, it can be used to build a repository of feature models for Kconfig-based open-source projects (superseding [ekuiter/feature-model-repository-pipeline](https://github.com/ekuiter/feature-model-repository-pipeline)).
-* Third, it demonstrates how to apply the [FeatJAR](https://github.com/FeatJAR) infrastructure for authoring reproducible evaluations concerned with feature-model analysis.
+* Third, it demonstrates how to apply the [FeatJAR](https://github.com/FeatureIDE/FeatJAR/) infrastructure for authoring reproducible evaluations concerned with feature-model analysis.
 
 To support the first two use cases, we ship `params_ase22.ini` for replicating the evaluation of our ASE'22 paper and `params_repo.ini` for extracting a feature-model repository.
 

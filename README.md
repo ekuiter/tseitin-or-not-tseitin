@@ -1,7 +1,7 @@
 # Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6922808.svg)](https://doi.org/10.5281/zenodo.6922808)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6922158.svg)](https://doi.org/10.5281/zenodo.6922158)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6922807.svg)](https://doi.org/10.5281/zenodo.6922807)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6525375.svg)](https://doi.org/10.5281/zenodo.6525375)
 
 ![Evaluation Stages](stages.svg)
 

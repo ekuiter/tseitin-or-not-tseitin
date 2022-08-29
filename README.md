@@ -1,7 +1,7 @@
 # Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6922808.svg)](https://doi.org/10.5281/zenodo.6922808)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6922158.svg)](https://doi.org/10.5281/zenodo.6922158)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6922807.svg)](https://doi.org/10.5281/zenodo.6922807)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6525375.svg)](https://doi.org/10.5281/zenodo.6525375)
 
 ![Evaluation Stages](stages.svg)
 
@@ -22,13 +22,9 @@ To support the first two use cases, we ship `params_ase22.ini` for replicating t
 
 Regardless of the use case, these steps should be followed to set up the automation correctly.
 
-* First, install [Docker](https://docs.docker.com/get-docker/) on a 64-bit Linux 5.x system or [WSL 2](https://docs.microsoft.com/de-de/windows/wsl/install).
-    On Arch Linux, for example, run:
+* First, install [Docker](https://docs.docker.com/get-docker/) on a Linux system or [WSL 2](https://docs.microsoft.com/de-de/windows/wsl/install):
     ```
-    usermod -aG docker $(whoami) # then, log out and in again
-    sudo pacman -S docker
-    systemctl enable docker
-    systemctl start docker
+    curl -fsSL get.docker.com | bash
     ```
 * Clone this repository:
     ```

@@ -9,7 +9,7 @@ This repository provides Docker-based automation scripts for investigating trans
 
 The repository has several purposes:
 
-* First, it contains all evaluation scripts for our ASE'22 paper *Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses* (authored by Elias Kuiter, Sebastian Krieter, Chico Sundermann, Thomas Thüm, and Gunter Saake).
+* First, it contains all evaluation scripts for our ASE'22 paper *Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses* authored by Elias Kuiter, Sebastian Krieter, Chico Sundermann, Thomas Thüm, and Gunter Saake ([**Paper**](https://github.com/SoftVarE-Group/Papers/blob/main/2022/2022-ASE-Kuiter.pdf) and [**Slides**](https://github.com/SoftVarE-Group/Slides/blob/main/2022/2022-10-13-ASE-Tseitin.pdf) available).
     
     **The replication package for our ASE'22 paper is available [here](https://doi.org/10.5281/zenodo.6525375).**
     It was generated according to the instructions below.
@@ -45,7 +45,7 @@ Regardless of the use case, these steps should be followed to set up the automat
 * On a remote machine, run `screen -dmSL tseitin ./run.sh` and press `Ctrl A, D` to detach from an SSH session (run `screen -x tseitin` to re-attach and `sudo killall containerd dockerd kclause python3 java bash` to stop).
 * To re-run the script, run `./clean.sh && ./run.sh`.
 
-You can control which stages to (re-)run by prepolutating/removing files in the `output` directory.
+You can control which stages to (re-)run by prepopulating/removing files in the `output` directory.
 For an overview over the individual stages, see the source code of `run.sh`.
 
 ## File Structure

@@ -5,6 +5,8 @@
 
 ![Evaluation Stages](stages.svg)
 
+**Consider using our new experimentation workbench [ekuiter/torte](https://github.com/ekuiter/torte), which subsumes most of this repository's functionality.**
+
 This repository provides Docker-based automation scripts for investigating transformations of feature-model formulas into conjunctive normal form (CNF) and evaluating the impact of such CNF transformations on subsequent feature-model analyses using SAT and #SAT solvers.
 
 The repository has several purposes:

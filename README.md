@@ -11,7 +11,7 @@ This repository provides Docker-based automation scripts for investigating trans
 
 The repository has several purposes:
 
-* First, it contains all evaluation scripts for our ASE'22 paper *Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses* authored by Elias Kuiter, Sebastian Krieter, Chico Sundermann, Thomas Thüm, and Gunter Saake ([**Paper**](https://github.com/SoftVarE-Group/Papers/blob/main/2022/2022-ASE-Kuiter.pdf) and [**Slides**](https://github.com/SoftVarE-Group/Slides/blob/main/2022/2022-10-13-ASE-Tseitin.pdf) available).
+* First, it contains all evaluation scripts for our ASE'22 paper *Tseitin or not Tseitin? The Impact of CNF Transformations on Feature-Model Analyses* authored by Elias Kuiter, Sebastian Krieter, Chico Sundermann, Thomas Thüm, and Gunter Saake ([**ASE'22 Paper**](https://github.com/SoftVarE-Group/Papers/blob/main/2022/2022-ASE-Kuiter.pdf), [**ASE'22 Slides**](https://github.com/SoftVarE-Group/Slides/blob/main/2022/2022-10-13-ASE-Tseitin.pdf), [**SE'23 Slides**](https://github.com/SoftVarE-Group/Slides/blob/main/2023/2023-02-22-SE-Tseitin.pdf) available).
     
     **The replication package for our ASE'22 paper is available [here](https://doi.org/10.5281/zenodo.6525375).**
     It was generated according to the instructions below.
